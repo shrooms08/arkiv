@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {Script, console} from "forge-std/Script.sol";
 import {Arkiv} from "../src/Arkiv.sol";
 import {XLayerV3Adapter} from "../src/XLayerV3Adapter.sol";
+import {ArkivQuoter} from "../src/ArkivQuoter.sol";
 import {XLayerConfig} from "../src/config/XLayerConfig.sol";
 
 /// @notice Deploys the adapter and registry and wires the full 14-asset universe.
@@ -16,7 +17,7 @@ import {XLayerConfig} from "../src/config/XLayerConfig.sol";
 /// Usage:
 ///   forge script script/Deploy.s.sol --rpc-url xlayer --broadcast
 contract Deploy is Script {
-    function run() external returns (Arkiv arkiv, XLayerV3Adapter adapter) {
+    function run() external returns (Arkiv arkiv, XLayerV3Adapter adapter, ArkivQuoter quoter) {
         vm.startBroadcast();
 
         // The broadcasting account must own both contracts while they are being
@@ -49,6 +50,10 @@ contract Deploy is Script {
             arkiv.setAssetAllowed(wrappers[i], true, isCore[i]);
         }
 
+        // Read-only pricing for the UI. Ownerless and holds nothing: its swap
+        // callback always reverts, so there is nothing to configure or protect.
+        quoter = new ArkivQuoter(XLayerConfig.V3_FACTORY, XLayerConfig.POOL_INIT_CODE_HASH);
+
         if (finalOwner != deployer) {
             arkiv.transferOwnership(finalOwner);
             adapter.transferOwnership(finalOwner);
@@ -58,6 +63,7 @@ contract Deploy is Script {
 
         console.log("Arkiv       ", address(arkiv));
         console.log("Adapter     ", address(adapter));
+        console.log("Quoter      ", address(quoter));
         console.log("Owner       ", arkiv.owner());
         console.log("Pending owner", arkiv.pendingOwner());
         console.log("Mint cap    ", XLayerConfig.MINT_CAP);

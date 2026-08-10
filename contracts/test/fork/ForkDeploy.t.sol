@@ -22,7 +22,7 @@ contract ForkDeployTest is Test {
 
     function test_deployScriptWiresTheWholeUniverse() public {
         Deploy deployer = new Deploy();
-        (Arkiv arkiv, XLayerV3Adapter adapter) = deployer.run();
+        (Arkiv arkiv, XLayerV3Adapter adapter,) = deployer.run();
 
         address[] memory wrappers = XLayerConfig.wrappers();
         address[] memory pools = XLayerConfig.pools();
@@ -56,7 +56,7 @@ contract ForkDeployTest is Test {
     /// after a full deploy.
     function test_zeroSupplyCandidatesAreExcludedNotDeprioritised() public {
         Deploy deployer = new Deploy();
-        (Arkiv arkiv, XLayerV3Adapter adapter) = deployer.run();
+        (Arkiv arkiv, XLayerV3Adapter adapter,) = deployer.run();
 
         address[] memory excluded = XLayerConfig.excludedWrappers();
         string[] memory names = XLayerConfig.excludedSymbols();
@@ -93,7 +93,7 @@ contract ForkDeployTest is Test {
     /// particular no rebasing base token is.
     function test_baseTokensAreNeverAllowlisted() public {
         Deploy deployer = new Deploy();
-        (Arkiv arkiv,) = deployer.run();
+        (Arkiv arkiv,,) = deployer.run();
 
         assertFalse(arkiv.isAllowed(XLayerConfig.B_SPYX), "base SPYx never allowlisted");
         assertFalse(arkiv.isAllowed(XLayerConfig.B_GLDX));
