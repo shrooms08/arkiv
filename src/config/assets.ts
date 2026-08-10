@@ -16,7 +16,7 @@ export const CHAIN_NAME = "X Layer" as const;
 
 /** Global Dollar (Paxos). NOTE: 6 decimals, not 18. */
 export const USDG = {
-  address: "0x4ae46A509f6B1D9056937ba4500cB143933D2dC8",
+  address: "0x4ae46a509F6b1D9056937BA4500cb143933D2dc8",
   symbol: "USDG",
   decimals: 6,
 } as const;
@@ -270,15 +270,57 @@ export const ASSETS: readonly Asset[] = [
 /**
  * Verified as deployed on X Layer but EXCLUDED: no USDG pool, or a pool with
  * zero reserves. Kept here so nobody "rediscovers" them from the registry.
+ *
+ * Addresses recorded 2026-08-10 (Gate 1). Re-verified directly against chain
+ * 196: every wrapper below returns `totalSupply() == 0` and
+ * `factory.getPool(USDG, wrapper, 500) == address(0)`. Excluded means excluded —
+ * they are absent from ASSETS and therefore from ALLOWLIST, not merely ranked
+ * last. Listing them by address is what stops a future edit from re-adding one
+ * on the strength of its registry entry.
  */
 export const EXCLUDED = [
-  { symbol: "VTIx", reason: "wrapper totalSupply 0, no USDG pool" },
-  { symbol: "VOOx", reason: "wrapper totalSupply 0, no USDG pool" },
-  { symbol: "SLVx", reason: "wrapper totalSupply 0, no USDG pool" },
-  { symbol: "JPMx", reason: "wrapper totalSupply 0, no USDG pool" },
-  { symbol: "LLYx", reason: "wrapper totalSupply 0, no USDG pool" },
-  { symbol: "UNHx", reason: "wrapper totalSupply 0, no USDG pool" },
+  {
+    symbol: "VTIx",
+    wrapper: "0x2eE96832126dC446808BaBcbCc9A04905114f880",
+    base: "0xbD730E618bcD88C82dDeE52e10275CF2f88A4777",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
+  {
+    symbol: "VOOx",
+    wrapper: "0x64E225C84B80c7DAB7Ef2094a81A461a13F960C1",
+    base: "0xFfAE0B911CB2cb7B49FD75011D99D137C040A9eF",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
+  {
+    symbol: "SLVx",
+    wrapper: "0xB842EacB35Fd9c1bEDA53749072Ef22823f2cA8c",
+    base: "0x4833e7f4f0460f4B72A3a5879A6C9841bCC5B58B",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
+  {
+    symbol: "JPMx",
+    wrapper: "0x15302e0D167EfBcf61129125C89035411842809B",
+    base: "0xD9FC3E075d45254a1D834fEa18AF8041207DeA0A",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
+  {
+    symbol: "LLYx",
+    wrapper: "0x9daea2fe63D4C8A7DF8373909fccB27b640f9516",
+    base: "0x19c41EA77b34BbDEe61c3A87A75D1ABDA2ED0be4",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
+  {
+    symbol: "UNHx",
+    wrapper: "0x1F652b05eFB825a068304972BC506Fb43Fac4D6F",
+    base: "0x167A6375DA1eFc4a5BE0f470E73eCEfd66245048",
+    reason: "wrapper totalSupply 0, no USDG pool",
+  },
 ] as const;
+
+/** Excluded wrapper addresses, lowercased. Never allowlist any of these. */
+export const EXCLUDED_WRAPPERS: readonly string[] = EXCLUDED.map((e) =>
+  e.wrapper.toLowerCase(),
+);
 
 export const CORE_ASSETS = ASSETS.filter((a) => a.role === "core");
 export const TILT_ASSETS = ASSETS.filter((a) => a.role === "tilt");

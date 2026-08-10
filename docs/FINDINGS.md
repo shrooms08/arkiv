@@ -62,9 +62,17 @@ against a known Uniswap deployment. See §4.
 
 | Field | Value |
 | --- | --- |
-| Address | `0x4ae46A509f6B1D9056937ba4500cB143933D2dC8` |
+| Address | `0x4ae46a509F6b1D9056937BA4500cb143933D2dc8` |
 | Name / symbol | Global Dollar / `USDG` |
 | **Decimals** | **6** |
+
+**Checksum corrected in Gate 1.** The address was previously recorded as
+`0x4ae46A509f6B1D9056937ba4500cB143933D2dC8`, which is the right 20 bytes with a
+wrong EIP-55 checksum — the only one of the 46 addresses in `assets.ts` that
+failed. `cast` is case-insensitive so it never surfaced, but `solc` rejects such
+a literal at compile time and `viem`/`ethers` `getAddress()` throws at runtime.
+Identity re-confirmed on-chain against the corrected form: `Global Dollar` /
+`USDG` / 6 decimals.
 
 **`USDG` has 6 decimals, not 18.** Every amount in the mint path, the cap, and
 the UI must respect this. The $5,000 cap is `5_000_000_000n`, not `5000e18`.
@@ -267,6 +275,79 @@ composition limits still apply per basket.
 Recorded in [`src/config/assets.ts`](../src/config/assets.ts) as the single
 source of truth, with addresses generated programmatically from the verified
 dataset rather than transcribed by hand.
+
+---
+
+## 8. Gate 1 additions
+
+Verified while building the contracts. Same chain, same method: read it, do not
+assume it.
+
+### The V3 fork uses the CANONICAL pool init code hash
+
+CREATE2 over `(factory, keccak256(token0, token1, fee), initCodeHash)` with the
+canonical Uniswap V3 hash
+`0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54` reproduces
+every one of the 14 recon pool addresses exactly, and each matches
+`factory.getPool` as well.
+
+This is the single most useful thing found in Gate 1. It means the swap callback
+can *derive* its expected caller rather than trust a stored address, which is
+what makes the third callback lock possible at all. The hash is still a
+constructor argument rather than a hardcoded constant, because "this fork matches
+canonical" is a measured fact about one deployment, not a law.
+
+Asserted for all 14 in `ForkPoolDerivation.t.sol`.
+
+### X Layer is Cancun-enabled — EIP-1153 is really available
+
+`eth_getBlockByNumber` returns `blobGasUsed`, `excessBlobGas` and
+`parentBeaconBlockRoot`. Transient storage is therefore a real mechanism here,
+not just a naming convention, and the adapter's swap lock and the reentrancy
+guard both use `TSTORE`/`TLOAD`.
+
+This mattered: had the chain been pre-Cancun, "set transient state before the
+swap" would have had to be a plain storage slot, and the `transient` keyword
+would have compiled to something the chain rejects.
+
+### The six excluded assets, now recorded by address
+
+Gate 0 excluded VTIx, VOOx, SLVx, JPMx, LLYx and UNHx by symbol only, which left
+nothing stopping a later edit from re-adding one. They now carry addresses, and
+the exclusion was re-verified on chain 196:
+
+| Symbol | Wrapper | `totalSupply()` | `getPool(USDG, w, 500)` |
+| --- | --- | ---: | --- |
+| VTIx | `0x2eE96832126dC446808BaBcbCc9A04905114f880` | 0 | `address(0)` |
+| VOOx | `0x64E225C84B80c7DAB7Ef2094a81A461a13F960C1` | 0 | `address(0)` |
+| SLVx | `0xB842EacB35Fd9c1bEDA53749072Ef22823f2cA8c` | 0 | `address(0)` |
+| JPMx | `0x15302e0D167EfBcf61129125C89035411842809B` | 0 | `address(0)` |
+| LLYx | `0x9daea2fe63D4C8A7DF8373909fccB27b640f9516` | 0 | `address(0)` |
+| UNHx | `0x1F652b05eFB825a068304972BC506Fb43Fac4D6F` | 0 | `address(0)` |
+
+All six are genuinely deployed contracts — this is not a test against dead
+addresses — and all six are absent from the allowlist after a full deploy.
+
+### Measured blended slippage, through the production code path
+
+`ForkMint.t.sol` mints a $5,000 basket (GLDx 30 / NVDAx 30 / SPYx 40) against the
+real pools, measuring each leg's reference rate with a $10 trade on a snapshotted
+fork and rolling back so the measurement does not perturb what it measures:
+
+| Leg | Slippage |
+| --- | ---: |
+| GLDx | 6 bp |
+| NVDAx | 24 bp |
+| SPYx | 23 bp |
+| **Blended** | **18 bp** |
+
+This independently reproduces §5's ~20 bp estimate, but through `Basket.mint`
+rather than a bespoke script — so it is a measurement of the thing that will
+actually ship. It sits an order of magnitude inside the 200 bp budget.
+
+A $1,000 mint of the same basket implies GLDx ≈ $398, NVDAx ≈ $224, SPYx ≈ $778,
+which are plausible marks and a useful sanity check that the pools are real and
+correctly oriented.
 
 ---
 

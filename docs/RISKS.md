@@ -30,6 +30,12 @@ standing condition of holding any Backed xStock, on any chain.
 before a user commits funds. A 2-of-3 Safe is meaningfully better than an EOA and
 worth saying so — but it is still three keys.
 
+**Placement is part of the mitigation.** Burying this in a document nobody opens
+gets no credit for the honesty, so it belongs on the mint screen itself, one
+line, with the Safe address linked:
+`0x49754062E35f7591B93cc4F9915965be89643a65`. Tracked as a Gate 2 UI
+requirement — the contracts cannot enforce a disclosure.
+
 **Good news for the "unaudited third-party wrapper" question that prompted this
 check:** the wrappers are *not* a scattering of anonymous third-party contracts.
 They are one issuer-operated deployment, identical bytecode, one admin. That is
@@ -110,6 +116,31 @@ only external code in the swap path is the pool itself, which we address by
 constant. The mechanism was prototyped and executed successfully against all 14
 live pools on a mainnet fork.
 
+**The callback is the new attack surface, and it is the sharpest one in the
+protocol.** `uniswapV3SwapCallback` is external and pays out of the adapter's
+balance. Left unguarded, anyone calls it and the adapter hands over tokens. It
+carries three independent locks, any one of which is sufficient:
+
+1. A transient `_activePool` (EIP-1153) is non-zero only between our `swap()`
+   call and its return, so the callback cannot fire outside a swap we started.
+2. `msg.sender` must equal that exact pool.
+3. `msg.sender` must equal the CREATE2 address derived from the factory, the
+   token pair and the fee tier — so a forged payload cannot name a pool it is
+   not. This is only possible because the fork was found to use the canonical
+   Uniswap V3 init code hash (`FINDINGS.md` §8); had it not, we would have had
+   to fall back to locks 1 and 2 and say so.
+
+The callback additionally refuses to pay more than the `amountIn` committed to
+the swap in flight, and `registerPair` refuses to register a pool unless the
+CREATE2 derivation has code *and* the factory's own `getPool` returns the same
+address.
+
+Each lock is tested in isolation, including a direct call from an EOA while the
+adapter is deliberately pre-funded — so a passing test means the guard fired, not
+that there was nothing to steal. There is also a fuzz test asserting that no
+caller of any kind gets through outside a swap, and the EOA case is re-run
+against real chain state in `ForkMint.t.sol`.
+
 The vault additionally never trusts swap return values — it measures `balanceOf`
 deltas. A lying pool cannot inflate shares; it can only give a bad price, which
 the caller's own `minAmountsOut` rejects.
@@ -156,6 +187,13 @@ reverts on `multiplier()`. Base addresses are recorded in `assets.ts` **solely s
 they can be rejected**, and are excluded from the allowlist. Deposits are USDG
 and are swapped straight into wrappers, so a base token is never received in the
 normal path.
+
+**This is enforced as a property, not as a list.** `Arkiv.setAssetAllowed`
+probes `multiplier()` on any token being allowlisted and reverts with
+`RebasingToken` if it answers. So the invariant does not depend on an operator
+remembering which addresses are bases, and it holds for assets nobody has
+classified yet. A fork test confirms the probe discriminates in both directions:
+all 14 wrappers refuse `multiplier()`, and the three probed bases answer it.
 
 Because anyone can send any token to any address, a base token can still be
 *donated* to the vault. Share accounting must be driven by measured deltas of
@@ -214,6 +252,81 @@ knows what an asset is worth.
 
 ---
 
+## R12 — First-depositor inflation. LOW. Two independent defences.
+
+The standard attack on a share vault: open it with a dust position, donate assets
+directly to inflate the per-share backing, and every later depositor's share
+calculation rounds to zero. The vault is then permanently unmintable, and it
+costs the attacker only the donation.
+
+**Why the classic vector does not reach Arkiv.** The attack requires the vault to
+price shares off `token.balanceOf(vault)`. Arkiv prices off `reserves`, an
+internal ledger credited only from measured swap deltas during a mint. A direct
+transfer moves `balanceOf` and does not move `reserves`, so there is nothing for
+a donation to inflate. This is the same property that makes donated base tokens
+inert (R6), reached for a different reason.
+
+That is an argument, though, and arguments are worth less than defences. Two are
+in place regardless:
+
+**Dead shares.** `DEAD_SHARES = 1000` are minted to `0x…dEaD` on the first mint,
+paid for by the first minter, Uniswap-V2 style. `S` can never fall low enough for
+the rounding to bite. The more valuable consequence is a different one: a
+redeemer takes `floor(B_i · shares / S)`, so the residue is
+`ceil(B_i · DEAD_SHARES / S)`, which is at least 1 wei whenever `B_i >= 1`.
+**`B_i > 0` therefore holds for the life of the basket**, which closes a genuine
+liveness bug — before this, redeeming the entire supply could zero a leg and
+brick `mint` permanently on `EmptyLeg`. That bug was real, and the dead shares
+fix it whether or not the inflation attack was.
+
+**Minimum first mint.** `Arkiv.minFirstMint`, owner-settable, $10 at launch. No
+basket can be opened at a dust basis.
+
+Tested: open at the minimum, donate 1000× the vault's holdings on both legs,
+then assert a normal $1,000 mint still receives proportional shares with a
+`minSharesOut` set at 90% of expected. Plus a fuzz over donation multiples from
+1× to 1,000,000×, asserting the share count is independent of donations.
+
+---
+
+## R10 — The exit is deliberately ungated. LOW. Accepted by design.
+
+`redeem` is **not** pausable and **not** sanctions-screened. Screening happens on
+the way in, on both the payer and the share receiver; on the way out there is no
+check at all.
+
+This is a deliberate asymmetry, and it cuts against the reflex to gate both
+sides. Redemption is in-kind and touches no pool, so it cannot be used to extract
+value from anyone else — a redeemer takes their own pro-rata slice and nothing
+more. Gating it would mean that the owner key (R8) or a third-party deny-list
+could **trap** user funds in the vault indefinitely. Trapping people is a worse
+outcome than letting a screened address take back what is already theirs.
+
+Stated plainly rather than left implicit, because a reviewer expecting symmetric
+screening should see that the asymmetry was chosen, not overlooked.
+
+---
+
+## R11 — On-chain rules are narrower than the underwriter's rules. LOW. Intentional.
+
+`Arkiv.createBasket` enforces: 2–8 legs, weights summing to 10000, every leg
+≥ 500 bps, strictly ascending (which is how duplicates are rejected), every leg
+allowlisted, and core ≥ 5000 bps.
+
+It does **not** enforce the 6000 bps core *ceiling* that `assets.ts` carries.
+That ceiling is an expression band for the AI underwriter, not a safety property:
+a basket that is 100% index is less risky than one at the floor, and the vault has
+no business rejecting it. The floor protects mint execution by keeping size in
+the deeper pools; the ceiling only shapes what the model proposes, so it is
+enforced where the model's output is validated, not in the vault.
+
+Basket creation is otherwise permissionless. Everything that matters is checked
+on-chain, so there is nothing an untrusted creator can smuggle past — and the
+archive is more honest if it records what people actually believed rather than
+what an operator approved.
+
+---
+
 ## Open items
 
 | # | Item | Blocker |
@@ -224,3 +337,11 @@ knows what an asset is worth.
 | 4 | Confirm OKX aggregator routing and quotes | `OK-ACCESS-KEY` not present |
 | 5 | Confirm behaviour of a Paxos-frozen USDG holder in the mint path | — |
 | 6 | Chainlink availability on X Layer (Pyth proven absent) | display NAV only; not settlement-critical |
+| 7 | Surface the R1 upgradeability line on the mint screen, Safe address linked | Gate 2 (UI) |
+| 8 | Range-chunk `/archive` log queries so they work under a 100-block limit | Gate 2 |
+| 9 | Move owner from EOA to a multisig via `Ownable2Step` | post-hackathon |
+| 10 | Re-pin the fork block if the public RPC prunes state at 67,600,000 | — |
+
+Closed since Gate 0: the V3-fork init code hash is confirmed canonical (was a
+prerequisite for the callback guard's CREATE2 lock), and the six zero-supply
+exclusions now carry verified addresses rather than symbols alone.

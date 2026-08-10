@@ -1,0 +1,35 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+
+# X Layer (chain 196) is Cancun-enabled: blocks carry blobGasUsed, excessBlobGas
+# and parentBeaconBlockRoot. Verified 2026-08-10 against rpc.xlayer.tech.
+# This is what lets the adapter use EIP-1153 transient storage for the swap lock.
+solc = "0.8.28"
+evm_version = "cancun"
+
+optimizer = true
+optimizer_runs = 200
+
+# Basket.mint carries the whole per-leg working set (received, used, split,
+# floors, binding leg) live at once and exceeds the legacy codegen stack limit.
+via_ir = true
+
+# Deterministic revert data in tests.
+bytecode_hash = "none"
+
+[fuzz]
+runs = 256
+
+[profile.ci]
+fuzz = { runs = 1000 }
+
+[rpc_endpoints]
+# Public endpoint. Gate 0 measured a 10-call batch limit and a 100-block
+# eth_getLogs range; it also rate-limits hard enough to time out when a fork test
+# walks proxy storage across 14 tokens. Hence the conservative CUPS and generous
+# retries. Set XLAYER_RPC_URL to use the QuickNode endpoint instead, which needs
+# none of this.
+xlayer = { endpoint = "https://rpc.xlayer.tech", retries = 10, retry_backoff = 1000, compute_units_per_second = 40 }
