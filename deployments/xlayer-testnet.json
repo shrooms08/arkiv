@@ -2,23 +2,70 @@
   "chainId": 1952,
   "network": "X Layer Testnet",
   "explorer": "https://www.oklink.com/xlayer-test",
-  "status": "not-deployed",
+  "status": "deployed",
   "note": "Populated by scripts/record-deployment.ts after a successful broadcast. Every address here must be verifiable on the explorer by someone who is not us.",
   "usesMockAssets": true,
-  "deployedAt": null,
-  "deployBlock": null,
-  "deployer": null,
+  "deployedAt": "2026-08-11T09:08:24.019Z",
+  "deployBlock": 37980201,
+  "deployer": "0xd8157D6E2E3017cB28F05A8E9781Af0A1bD2f080",
   "contracts": {
-    "Arkiv": null,
-    "MockDexAdapter": null,
-    "ArkivQuoter": null,
-    "MockUSDG": null,
-    "MockSanctionsList": null
+    "MockUSDG": "0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0",
+    "MockSanctionsList": "0x2A5Ff16591CcAa115a8b20C1F7Fe31207C8A4038",
+    "MockDexAdapter": "0x964314bBb3038Ec181834859d81878704630F83a",
+    "Arkiv": "0x2A775aaE9c11Cf0ae9543f0EB7778976EB69008f",
+    "MockWrapper:GLDx": "0x8Ad9E4540f59A740eC9e7D44a73673F324401ade",
+    "MockWrapper:QQQx": "0x513b881eD1f771aCb5decDaf536f2e9B2C080C34",
+    "MockWrapper:SPYx": "0xfF49F7D98764e334d8507cC8284F63b306b98044",
+    "MockWrapper:IWMx": "0xF62aF5F56ba0Eb1D8e92EBf18ECE2cA1a44f6958",
+    "MockWrapper:NVDAx": "0x8C6498cf60C5268351C2694e3788E0e66F266995",
+    "MockWrapper:TSLAx": "0x1558a25eE373b2028826d26c9F4F29a613D53098",
+    "MockWrapper:MSFTx": "0x47DB050Cd339f9A07497112Bf1a9ECFf4872b714",
+    "MockWrapper:AMZNx": "0x396EA001cf4a41b92037726617802AC1bD4a7F81",
+    "MockWrapper:COINx": "0x701c372d0292141c5d024A3F6629C7a2090be098",
+    "MockWrapper:METAx": "0x3C4411aD7a231eC1874b81E945c8B2213a8F2e13",
+    "MockWrapper:AVGOx": "0x48917839eB39b4e603f7C28b559C533DA36A995e",
+    "MockWrapper:GOOGLx": "0xb163589bf0beaD95d7e52EA7f6cDD268050E236C",
+    "MockWrapper:AAPLx": "0x46E0ab92Db51321e8f9Ca3eA601b28Fa4b207FE4",
+    "MockWrapper:AMDx": "0x2E3598B96B881775A309f84e5c496431e48ff48b",
+    "Basket:AIBOTTLE": "0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a",
+    "Basket:STICKYINF": "0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf",
+    "Basket:SCRATE": "0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62"
   },
-  "assets": {},
-  "baskets": [],
+  "assets": {
+    "GLDx": "0x8Ad9E4540f59A740eC9e7D44a73673F324401ade",
+    "QQQx": "0x513b881eD1f771aCb5decDaf536f2e9B2C080C34",
+    "SPYx": "0xfF49F7D98764e334d8507cC8284F63b306b98044",
+    "IWMx": "0xF62aF5F56ba0Eb1D8e92EBf18ECE2cA1a44f6958",
+    "NVDAx": "0x8C6498cf60C5268351C2694e3788E0e66F266995",
+    "TSLAx": "0x1558a25eE373b2028826d26c9F4F29a613D53098",
+    "MSFTx": "0x47DB050Cd339f9A07497112Bf1a9ECFf4872b714",
+    "AMZNx": "0x396EA001cf4a41b92037726617802AC1bD4a7F81",
+    "COINx": "0x701c372d0292141c5d024A3F6629C7a2090be098",
+    "METAx": "0x3C4411aD7a231eC1874b81E945c8B2213a8F2e13",
+    "AVGOx": "0x48917839eB39b4e603f7C28b559C533DA36A995e",
+    "GOOGLx": "0xb163589bf0beaD95d7e52EA7f6cDD268050E236C",
+    "AAPLx": "0x46E0ab92Db51321e8f9Ca3eA601b28Fa4b207FE4",
+    "AMDx": "0x2E3598B96B881775A309f84e5c496431e48ff48b"
+  },
+  "baskets": [
+    {
+      "symbol": "AIBOTTLE",
+      "name": "AI Infrastructure Bottleneck",
+      "address": "0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a"
+    },
+    {
+      "symbol": "STICKYINF",
+      "name": "Sticky Inflation, Central Bank Blink",
+      "address": "0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf"
+    },
+    {
+      "symbol": "SCRATE",
+      "name": "Small Cap Rate Relief with Index Hedge",
+      "address": "0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62"
+    }
+  ],
   "transactions": {
-    "mint": null,
-    "redeem": null
+    "mint": "0x180ef7e1db3e7ddcae1162020cc909a250012ee7c03f61b768e272a7dae49989",
+    "redeem": "0x9820a2efbd7ca82c7351a55993739274b91bec73b9e48d64a1dc413031448f81"
   }
 }

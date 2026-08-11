@@ -35,6 +35,12 @@ export const xLayerTestnet = defineChain({
   blockExplorers: {
     default: { name: "OKLink", url: "https://www.oklink.com/xlayer-test" },
   },
+  // Verified on chain 1952 before being configured, exactly as on mainnet:
+  // 3808 bytes of code at the canonical address, and `getBlockNumber()` returns
+  // the current head. Without this every `client.multicall` throws
+  // "multicallAddress is required" — which breaks the basket and archive pages,
+  // since both read composition for several legs at once.
+  contracts: { multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" } },
 });
 
 /**

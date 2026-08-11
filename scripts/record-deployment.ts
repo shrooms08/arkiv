@@ -1,25 +1,52 @@
 /**
- * Fills a deployment manifest from a Foundry broadcast artefact.
+ * Fills a deployment manifest from a Foundry broadcast artefact, then completes
+ * it by READING THE CHAIN.
  *
- * Reads the addresses that were actually mined rather than anything typed by
- * hand, so `deployments/*.json` cannot drift from the chain.
+ * The artefact alone is not enough. It records the transactions we sent, so it
+ * knows the 18 contracts the deployer created directly — but the three `Basket`
+ * contracts are created by `Arkiv.createBasket` via internal CREATE, and appear
+ * nowhere in it. It also names every wrapper `MockWrapper_N`, which is an
+ * artefact of deploy order rather than anything meaningful.
  *
- *   npx tsx scripts/record-deployment.ts <chainId> <script-name>
+ * So symbols and baskets are resolved by calling the deployed contracts. That
+ * makes the manifest self-checking: if a wrapper is not really at that address,
+ * `symbol()` fails and nothing is written.
+ *
+ *   npx tsx scripts/record-deployment.ts <chainId> <script-name> [rpcUrl]
  *   npx tsx scripts/record-deployment.ts 1952 DeployTestnet.s.sol
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createPublicClient, getAddress, http, type Address } from "viem";
 
-const [chainId, scriptName] = process.argv.slice(2);
+const [chainId, scriptName, rpcArg] = process.argv.slice(2);
 if (!chainId || !scriptName) {
-  console.error("usage: record-deployment.ts <chainId> <script-name>");
+  console.error("usage: record-deployment.ts <chainId> <script-name> [rpcUrl]");
   process.exit(1);
+}
+
+const RPC: Record<string, string> = {
+  "1952": "https://testrpc.xlayer.tech",
+  "196": "https://rpc.xlayer.tech",
+};
+const rpcUrl = rpcArg ?? RPC[chainId];
+if (!rpcUrl) {
+  console.error(`no RPC known for chain ${chainId}; pass one as the third argument`);
+  process.exit(1);
+}
+
+interface BroadcastTx {
+  transactionType: string;
+  contractName: string | null;
+  contractAddress: string | null;
+  hash: string;
+  function: string | null;
 }
 
 const broadcast = JSON.parse(
   readFileSync(join("contracts", "broadcast", scriptName, chainId, "run-latest.json"), "utf8"),
 ) as {
-  transactions: { transactionType: string; contractName: string | null; contractAddress: string | null; hash: string }[];
+  transactions: (BroadcastTx & { transaction: { from?: string } })[];
   receipts: { blockNumber: string }[];
   timestamp: number;
 };
@@ -28,23 +55,90 @@ const file = chainId === "196" ? "xlayer-mainnet.json" : "xlayer-testnet.json";
 const path = join("deployments", file);
 const manifest = JSON.parse(readFileSync(path, "utf8"));
 
+const client = createPublicClient({ transport: http(rpcUrl) });
+
+const symbolAbi = [
+  { type: "function", name: "symbol", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+] as const;
+const nameAbi = [
+  { type: "function", name: "name", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+] as const;
+const basketsAbi = [
+  {
+    type: "function",
+    name: "getAllBaskets",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address[]" }],
+  },
+] as const;
+
+// --- 1. Directly-deployed contracts, from the artefact -----------------------
+const created = broadcast.transactions.filter(
+  (t) => t.transactionType === "CREATE" && t.contractName && t.contractAddress,
+);
+
 const contracts: Record<string, string> = {};
-for (const tx of broadcast.transactions) {
-  if (tx.transactionType === "CREATE" && tx.contractName && tx.contractAddress) {
-    // Later deploys of the same name (e.g. per-basket Basket) get suffixed.
-    const key = contracts[tx.contractName]
-      ? `${tx.contractName}_${Object.keys(contracts).filter((k) => k.startsWith(tx.contractName!)).length}`
-      : tx.contractName;
-    contracts[key] = tx.contractAddress;
+const assets: Record<string, string> = {};
+
+for (const tx of created) {
+  const address = getAddress(tx.contractAddress!);
+  if (tx.contractName === "MockWrapper") {
+    // Name it by what it actually calls itself on chain, not by deploy order.
+    const symbol = (await client.readContract({
+      address,
+      abi: symbolAbi,
+      functionName: "symbol",
+    })) as string;
+    assets[symbol] = address;
+    contracts[`MockWrapper:${symbol}`] = address;
+  } else {
+    contracts[tx.contractName!] = address;
   }
 }
 
+// --- 2. Baskets, which exist only on chain -----------------------------------
+const arkiv = contracts.Arkiv as Address | undefined;
+const baskets: { symbol: string; name: string; address: string }[] = [];
+if (arkiv) {
+  const addresses = (await client.readContract({
+    address: arkiv,
+    abi: basketsAbi,
+    functionName: "getAllBaskets",
+  })) as readonly Address[];
+
+  for (const address of addresses) {
+    const [symbol, name] = await Promise.all([
+      client.readContract({ address, abi: symbolAbi, functionName: "symbol" }) as Promise<string>,
+      client.readContract({ address, abi: nameAbi, functionName: "name" }) as Promise<string>,
+    ]);
+    baskets.push({ symbol, name, address: getAddress(address) });
+    contracts[`Basket:${symbol}`] = getAddress(address);
+  }
+}
+
+// --- 3. Provenance ------------------------------------------------------------
+// Foundry writes `timestamp` in milliseconds; treating it as seconds dates the
+// deployment to the year 58580.
+const ts = broadcast.timestamp;
+const ms = ts > 1e12 ? ts : ts * 1000;
+
+const first = broadcast.transactions[0];
+const sample = (fn: string) => broadcast.transactions.find((t) => t.function?.startsWith(fn))?.hash ?? null;
+
 manifest.status = "deployed";
-manifest.deployedAt = new Date(broadcast.timestamp * 1000).toISOString();
+manifest.deployedAt = new Date(ms).toISOString();
 manifest.deployBlock = broadcast.receipts.length
   ? Number(BigInt(broadcast.receipts[0]!.blockNumber))
   : null;
+manifest.deployer = first?.transaction?.from ? getAddress(first.transaction.from) : null;
 manifest.contracts = contracts;
+manifest.assets = assets;
+manifest.baskets = baskets;
+manifest.transactions = { mint: sample("mint("), redeem: sample("redeem(") };
 
 writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
-console.log(`recorded ${Object.keys(contracts).length} contracts to ${path}`);
+console.log(
+  `recorded ${Object.keys(contracts).length} contracts, ${Object.keys(assets).length} assets, ` +
+    `${baskets.length} baskets to ${path}`,
+);

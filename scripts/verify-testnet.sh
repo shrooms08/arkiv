@@ -7,58 +7,53 @@
 #   - OKLink is the explorer people will actually click, and needs OK_ACCESS_KEY.
 #     Attempted only when that key is present.
 #
-# Includes the per-basket Basket contracts: an archive full of unverified
-# contracts reads as careless, and the Basket is the contract holding the funds.
-set -euo pipefail
+# Targets come from scripts/verify-targets.ts, which resolves each contract's
+# constructor arguments — without them nothing verifies. That includes the
+# per-basket Basket contracts, which the factory creates internally and which
+# hold the actual funds; an archive of unverified contracts reads as careless.
+set -uo pipefail
 
 CHAIN=1952
 RPC=${RPC:-https://testrpc.xlayer.tech}
-MANIFEST=deployments/xlayer-testnet.json
+cd "$(dirname "$0")/.."
 
-verify() {
-  local addr=$1 path=$2 args=${3:-}
-  echo "--- $path @ $addr"
-  local common=(--chain-id "$CHAIN" --rpc-url "$RPC" --watch)
-  [ -n "$args" ] && common+=(--constructor-args "$args")
+TARGETS=$(mktemp)
+trap 'rm -f "$TARGETS"' EXIT
+npx tsx scripts/verify-targets.ts "$CHAIN" "$RPC" > "$TARGETS" || {
+  echo "could not build verification targets"; exit 1;
+}
 
-  forge verify-contract "$addr" "$path" "${common[@]}" --verifier sourcify || \
+ok=0; failed=0
+while read -r addr path args; do
+  [ -z "$addr" ] && continue
+  echo "--- ${path##*:} @ $addr"
+
+  common=(--chain-id "$CHAIN" --rpc-url "$RPC" --watch --compiler-version 0.8.28)
+  [ -n "${args:-}" ] && common+=(--constructor-args "0x$args")
+
+  if (cd contracts && forge verify-contract "$addr" "$path" "${common[@]}" \
+      --verifier sourcify --verifier-url https://sourcify.dev/server) 2>&1 | tail -3; then
+    ok=$((ok+1))
+  # forge sends a MINIMAL standard JSON holding only the files this contract
+  # imports. Under via_ir that can compile to different bytecode than the
+  # original build, and Sourcify rejects it (`extra_file_input_bug`). Retry with
+  # the exact input solc was given the first time. Arkiv needs this; the mocks
+  # do not, which is why it is a fallback rather than the default path.
+  elif scripts/sourcify-full-input.py "$CHAIN" "$addr" "$path"; then
+    echo "    recovered via full standard-JSON input"
+    ok=$((ok+1))
+  else
+    failed=$((failed+1))
     echo "    sourcify failed for $addr"
+  fi
 
   if [ -n "${OK_ACCESS_KEY:-}" ]; then
-    forge verify-contract "$addr" "$path" "${common[@]}" \
-      --verifier oklink --etherscan-api-key "$OK_ACCESS_KEY" || \
+    (cd contracts && forge verify-contract "$addr" "$path" "${common[@]}" \
+      --verifier oklink --etherscan-api-key "$OK_ACCESS_KEY") 2>&1 | tail -3 || \
       echo "    oklink failed for $addr"
   fi
-}
+done < "$TARGETS"
 
-cd "$(dirname "$0")/.."
-python3 - "$MANIFEST" <<'PY' > /tmp/arkiv-verify-targets
-import json, sys
-m = json.load(open(sys.argv[1]))
-paths = {
-    "Arkiv": "contracts/src/Arkiv.sol:Arkiv",
-    "MockUSDG": "contracts/src/mocks/TestnetMocks.sol:MockUSDG",
-    "MockSanctionsList": "contracts/src/mocks/TestnetMocks.sol:MockSanctionsList",
-    "MockDexAdapter": "contracts/src/mocks/TestnetMocks.sol:MockDexAdapter",
-}
-for name, addr in (m.get("contracts") or {}).items():
-    if not addr:
-        continue
-    base = name.split("_")[0]
-    if base.startswith("MockWrapper"):
-        print(f"{addr} contracts/src/mocks/TestnetMocks.sol:MockWrapper")
-    elif base == "Basket":
-        print(f"{addr} contracts/src/Basket.sol:Basket")
-    elif base in paths:
-        print(f"{addr} {paths[base]}")
-for b in m.get("baskets") or []:
-    if b.get("address"):
-        print(f"{b['address']} contracts/src/Basket.sol:Basket")
-PY
-
-while read -r addr path; do
-  [ -z "$addr" ] && continue
-  verify "$addr" "$path"
-done < /tmp/arkiv-verify-targets
-
-echo "done. sourcify: https://repo.sourcify.dev/contracts/full_match/$CHAIN/"
+echo
+echo "submitted: $ok ok, $failed failed"
+echo "sourcify: https://repo.sourcify.dev/contracts/full_match/$CHAIN/"
