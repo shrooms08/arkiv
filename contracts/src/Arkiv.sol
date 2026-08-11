@@ -38,10 +38,11 @@ contract Arkiv is IArkiv, Ownable2Step {
     /// core: measured depth ($279,749 USDG, 22 bp at $5k) is the best of any
     /// asset in the universe, and gold as a liquid anchor is what makes macro
     /// theses expressible.
-    /// @dev Only the floor is enforced on-chain. The 6000 bps ceiling in
-    /// src/config/assets.ts is an expression band for the underwriter, not a
-    /// safety property — a basket that is 100% index is less risky, not more,
-    /// and the vault has no business rejecting it.
+    /// @dev A floor, and deliberately no ceiling. This rule is about LIQUIDITY:
+    /// it keeps the mint in deep pools so slippage stays inside budget. A basket
+    /// that is 100% index is less risky, not more, so the vault has no business
+    /// rejecting it. Whether a basket actually expresses a view is a product
+    /// concern, enforced where the underwriter's output is validated.
     uint256 public constant MIN_CORE_BPS = 5000;
 
     // ---------------------------------------------------------------------
@@ -239,12 +240,44 @@ contract Arkiv is IArkiv, Ownable2Step {
         return assetInfo[wrapper].allowed;
     }
 
+    /// @notice Number of baskets ever created. Never decreases — the archive is
+    /// append-only and a thesis is never removed from it.
     function basketCount() external view returns (uint256) {
         return baskets.length;
     }
 
-    function allBaskets() external view returns (address[] memory) {
+    /// @notice The entire archive, in creation order.
+    ///
+    /// @dev The archive is a first-class on-chain object, not a view derived by
+    /// replaying `BasketCreated` logs. Anyone — our frontend, an explorer, a
+    /// third party — can enumerate every thesis ever written with one `eth_call`
+    /// and no indexer, and it keeps working on an RPC that caps `eth_getLogs` at
+    /// 100 blocks. `BasketCreated` is still emitted for indexers; it is simply
+    /// not how state is read.
+    ///
+    /// Unbounded by design, because the caller can always page instead. Prefer
+    /// `getBaskets` once the archive is large.
+    function getAllBaskets() external view returns (address[] memory) {
         return baskets;
+    }
+
+    /// @notice A page of the archive, newest-agnostic (creation order).
+    /// @param offset Index to start at.
+    /// @param limit Maximum entries to return.
+    /// @return page The slice, truncated at the end of the array rather than
+    /// reverting — so a caller paging past the end gets an empty array and stops,
+    /// instead of having to check `basketCount()` first and race a new creation.
+    function getBaskets(uint256 offset, uint256 limit) external view returns (address[] memory page) {
+        uint256 total = baskets.length;
+        if (offset >= total) return new address[](0);
+
+        uint256 end = offset + limit;
+        if (end > total) end = total;
+
+        page = new address[](end - offset);
+        for (uint256 i; i < page.length; ++i) {
+            page[i] = baskets[offset + i];
+        }
     }
 
     /// @dev A base xStock answers `multiplier()` with its rebase factor; a

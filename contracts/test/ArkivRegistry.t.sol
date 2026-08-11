@@ -7,6 +7,16 @@ import {Basket} from "../src/Basket.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MockERC20, MockRebasingToken} from "./mocks/MockERC20.sol";
 
+/// @dev Isolates the cost of one `baskets.push` so the archive's storage cost can
+/// be measured on its own rather than inferred from the createBasket total.
+contract ArrayAppendHarness {
+    address[] internal items;
+
+    function push(address item) external {
+        items.push(item);
+    }
+}
+
 contract ArkivRegistryTest is ArkivFixture {
     function setUp() public {
         setUpArkiv();
@@ -260,6 +270,71 @@ contract ArkivRegistryTest is ArkivFixture {
 
         vm.expectRevert(Basket.OnlyArkiv.selector);
         new Basket(address(arkiv), address(usdg), "X", "X", tokens, weights, "");
+    }
+
+    // -----------------------------------------------------------------
+    // The archive is an on-chain array, not a log replay
+    // -----------------------------------------------------------------
+
+    /// @notice Enumerating every thesis ever written must be one call with no
+    /// indexer and no block-range scan — the public RPC caps eth_getLogs at 100
+    /// blocks, so a log-derived archive stops working as the chain grows.
+    function test_archiveIsEnumerableOnChain() public {
+        (address[] memory tokens, uint16[] memory weights) = _twoLeg(6000, 4000);
+
+        address a = arkiv.createBasket("A", "A", tokens, weights, "ipfs://a");
+        address b = arkiv.createBasket("B", "B", tokens, weights, "ipfs://b");
+        address c = arkiv.createBasket("C", "C", tokens, weights, "ipfs://c");
+
+        assertEq(arkiv.basketCount(), 3);
+
+        address[] memory all = arkiv.getAllBaskets();
+        assertEq(all.length, 3);
+        assertEq(all[0], a);
+        assertEq(all[1], b);
+        assertEq(all[2], c);
+    }
+
+    function test_getBaskets_pagesThroughTheArchive() public {
+        (address[] memory tokens, uint16[] memory weights) = _twoLeg(6000, 4000);
+        address[] memory created = new address[](5);
+        for (uint256 i; i < 5; ++i) {
+            created[i] = arkiv.createBasket("B", "B", tokens, weights, "ipfs://b");
+        }
+
+        address[] memory first = arkiv.getBaskets(0, 2);
+        assertEq(first.length, 2);
+        assertEq(first[0], created[0]);
+        assertEq(first[1], created[1]);
+
+        address[] memory middle = arkiv.getBaskets(2, 2);
+        assertEq(middle.length, 2);
+        assertEq(middle[0], created[2]);
+
+        // A page that runs off the end truncates rather than reverting, so a
+        // caller never has to read basketCount() first and race a creation.
+        address[] memory tail = arkiv.getBaskets(4, 10);
+        assertEq(tail.length, 1);
+        assertEq(tail[0], created[4]);
+
+        // Past the end is empty, not a revert.
+        assertEq(arkiv.getBaskets(99, 10).length, 0);
+        assertEq(arkiv.getBaskets(0, 0).length, 0);
+    }
+
+    /// @notice What the archive array actually costs per basket. Expected to be
+    /// negligible against the ~2.1M gas a basket deploy already costs; measured
+    /// rather than assumed.
+    function test_archiveAppendCost() public {
+        ArrayAppendHarness h = new ArrayAppendHarness();
+        h.push(address(1)); // warm the length slot; first push is the outlier
+
+        uint256 before = gasleft();
+        h.push(address(2));
+        uint256 used = before - gasleft();
+
+        emit log_named_uint("storage append per basket (gas)", used);
+        assertLt(used, 30_000, "one cold SSTORE plus the length update");
     }
 
     // -----------------------------------------------------------------

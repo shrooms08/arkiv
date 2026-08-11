@@ -49,6 +49,29 @@ to an address holding code *and* be confirmed by the factory's own `getPool`, so
 a deploy against a wrong factory, a wrong init code hash or a stale pool list
 reverts here rather than at the first mint.
 
+## Running the whole thing against real pools
+
+X Layer **testnet has no xStocks, no USDG and no pools**, so the protocol cannot
+actually run there — a basket minted on testnet would have no underlying. The
+honest end-to-end environment is a local fork of mainnet, where the pools are the
+real ones:
+
+```bash
+anvil --fork-url https://rpc.xlayer.tech --fork-block-number 67600000 --chain-id 196
+cast rpc anvil_setBalance <deployer> 0x21E19E0C9BAB2400000
+forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --private-key <key>
+```
+
+Point the app at it by setting `NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545` plus the
+three deployed addresses in `.env.local`. To fund a minter with USDG, impersonate a
+pool that already holds it rather than guessing at the proxy's storage layout:
+
+```bash
+cast rpc anvil_impersonateAccount 0x07c40850D14064D20eB0AfDEf9574675392f2c11
+cast send $USDG "transfer(address,uint256)" <minter> 1000000000 \
+  --from 0x07c40850D14064D20eB0AfDEf9574675392f2c11 --unlocked
+```
+
 ## Design notes
 
 Everything load-bearing is documented at its definition. The three things worth
