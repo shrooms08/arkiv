@@ -72,4 +72,31 @@ knowing before reading:
 Dependencies are OpenZeppelin v5.1.0 (`ERC20`, `Ownable2Step`, `SafeERC20`,
 `ReentrancyGuardTransient`) and `forge-std` v1.9.6, both pinned submodules.
 
+## Per-basket cost and verification
+
+Each thesis is its own ERC-20, so each is a contract deploy. Measured on fork at
+the chain's 0.02 gwei basefee (`test_basketDeploymentCost`):
+
+| Legs | Gas | Cost |
+| --- | ---: | ---: |
+| 3 | 2,144,638 | 0.0000429 OKB |
+| 8 | 2,245,817 | 0.0000449 OKB |
+
+Immaterial — there is no case for capping basket creation on cost grounds. Only
+the `createBasket` calldata hits the L1 data fee, and it is a few hundred bytes.
+
+Every basket shares identical runtime bytecode and differs only in constructor
+arguments, so verifying one teaches the explorer to match the rest. Verify the
+registry and a reference basket once:
+
+```bash
+forge verify-contract <ARKIV> src/Arkiv.sol:Arkiv --chain 196 --verifier oklink
+forge verify-contract <BASKET> src/Basket.sol:Basket --chain 196 --verifier oklink \
+  --constructor-args $(cast abi-encode \
+    "c(address,address,string,string,address[],uint16[],string)" ...)
+```
+
+Baskets created by users at runtime are verified by the app immediately after the
+`createBasket` receipt, since the deploy script cannot know about them.
+
 See [`../docs/RISKS.md`](../docs/RISKS.md) for what this design does not fix.

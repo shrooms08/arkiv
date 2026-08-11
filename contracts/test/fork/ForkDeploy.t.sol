@@ -89,6 +89,67 @@ contract ForkDeployTest is Test {
         }
     }
 
+    /// @notice One contract per basket is a real cost. Measure it rather than
+    /// assume it, so the decision to cap basket creation during the demo is made
+    /// against a number.
+    function test_basketDeploymentCost() public {
+        Deploy deployer = new Deploy();
+        (Arkiv arkiv,,) = deployer.run();
+
+        emit log_named_uint("fork basefee (wei)", block.basefee);
+
+        uint256 gas3 = _measureCreate(arkiv, 3);
+        uint256 gas8 = _measureCreate(arkiv, 8);
+
+        emit log_named_uint("createBasket gas, 3 legs", gas3);
+        emit log_named_uint("createBasket gas, 8 legs", gas8);
+        emit log_named_decimal_uint("cost, 3 legs (OKB)", gas3 * block.basefee, 18);
+        emit log_named_decimal_uint("cost, 8 legs (OKB)", gas8 * block.basefee, 18);
+
+        // A basket is a full contract deploy; this bounds it well below the
+        // 30M block limit so creation can never be the thing that fails.
+        assertLt(gas8, 6_000_000, "max-leg basket fits comfortably in a block");
+    }
+
+    /// @dev Creates a basket with `legCount` allowlisted legs, ascending, with
+    /// enough core weight to clear the floor, and returns the gas used.
+    function _measureCreate(Arkiv arkiv, uint256 legCount) internal returns (uint256) {
+        address[] memory all = XLayerConfig.wrappers();
+
+        // wrappers() is core-first but not address-sorted; take the first
+        // `legCount` and sort them, which keeps all four core assets in any
+        // selection of four or more.
+        address[] memory tokens = new address[](legCount);
+        for (uint256 i; i < legCount; ++i) {
+            tokens[i] = all[i];
+        }
+        for (uint256 i = 1; i < legCount; ++i) {
+            address key = tokens[i];
+            uint256 j = i;
+            while (j > 0 && tokens[j - 1] > key) {
+                tokens[j] = tokens[j - 1];
+                --j;
+            }
+            tokens[j] = key;
+        }
+
+        // Even weights, remainder onto the first leg. With legCount <= 8 every
+        // leg clears 500 bps, and the first four assets are core, so any
+        // selection of >= 4 legs clears the 5000 bps core floor.
+        uint16[] memory weights = new uint16[](legCount);
+        uint16 each = uint16(10_000 / legCount);
+        uint16 assigned;
+        for (uint256 i = 1; i < legCount; ++i) {
+            weights[i] = each;
+            assigned += each;
+        }
+        weights[0] = uint16(10_000 - assigned);
+
+        uint256 before = gasleft();
+        arkiv.createBasket("Measured", "ARKM", tokens, weights, "ipfs://measure");
+        return before - gasleft();
+    }
+
     /// @notice R6/R2: nothing outside the verified table is allowlisted, and in
     /// particular no rebasing base token is.
     function test_baseTokensAreNeverAllowlisted() public {

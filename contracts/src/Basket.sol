@@ -66,7 +66,11 @@ contract Basket is ERC20, ReentrancyGuardTransient {
     ///     zero a leg and permanently brick `mint` on `EmptyLeg`.
     uint256 public constant DEAD_SHARES = 1000;
 
-    /// @notice Where the dead shares go. Not `address(0)`, which ERC-20 rejects.
+    /// @notice Where the dead shares go.
+    /// @dev Uniswap V2 burns its MINIMUM_LIQUIDITY to `address(0)`. That is not
+    /// available here: OpenZeppelin's `ERC20._mint` reverts with
+    /// `ERC20InvalidReceiver` on the zero address. `0x…dEaD` is the equivalent
+    /// unspendable sink — no key exists for it — not an arbitrary choice.
     address public constant DEAD_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
     IArkiv public immutable arkiv;

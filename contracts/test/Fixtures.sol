@@ -14,6 +14,18 @@ import {MockDexAdapter} from "./mocks/MockDexAdapter.sol";
 ///
 /// The first four wrappers are marked core, mirroring the real universe's four
 /// core assets (GLDx, QQQx, SPYx, IWMx).
+/// ## Test conventions
+///
+/// **Never call a helper that makes an external call from an argument position
+/// after `vm.prank` or `vm.expectRevert`.** Foundry's cheatcodes apply to the
+/// NEXT call, so `basket.redeem(x, y, _legCount(basket))` silently spends the
+/// prank on the helper's own call and the line under test runs as the test
+/// contract. It has bitten this suite twice: once via a `_emptyMinOut(basket)`
+/// helper reading `legCount()`, and once via `basket.balanceOf(alice)` inline in
+/// a `redeem` argument. Both produced confusing failures far from the cause.
+///
+/// Hoist every value into a local first, and prefer `pure` helpers such as
+/// `_zeros(n)` that cannot make a call at all.
 abstract contract ArkivFixture is Test {
     MockERC20 internal usdg;
     MockSanctionsList internal sanctions;

@@ -469,6 +469,60 @@ contract BasketAccountingTest is ArkivFixture {
         basket.redeem(1e18, bob, _zeros(2));
     }
 
+    // -----------------------------------------------------------------
+    // R12 — the liveness bug the dead shares actually fixed
+    // -----------------------------------------------------------------
+
+    /// @notice The mechanism itself, isolated from the inflation scenario that
+    /// prompted it: redeem the ENTIRE redeemable supply and every leg must still
+    /// hold a non-zero reserve, because `mint` reverts `EmptyLeg` on a zero leg.
+    ///
+    /// Without dead shares this bricks the basket permanently, with no attacker
+    /// and no donation involved — just the last holder leaving.
+    function test_r12_fullRedemptionLeavesEveryLegNonZero() public {
+        _mintAtWeights(basket, alice, MINT_USDG, 0);
+
+        uint256 everything = basket.balanceOf(alice);
+        vm.prank(alice);
+        basket.redeem(everything, alice, _zeros(2));
+
+        assertEq(basket.balanceOf(alice), 0, "the last holder is fully out");
+        assertEq(basket.totalSupply(), basket.DEAD_SHARES(), "only dead shares remain");
+
+        assertGt(basket.reserves(core), 0, "core leg did not floor to zero");
+        assertGt(basket.reserves(tilt), 0, "tilt leg did not floor to zero");
+
+        // The point of the invariant: the basket is still usable afterwards.
+        uint256 shares = _mintAtWeights(basket, bob, MINT_USDG, 0);
+        assertGt(shares, 0, "a fresh mint still succeeds");
+    }
+
+    /// @notice The same invariant across a wide range of supply and reserve
+    /// magnitudes, since the failure is a rounding one and only shows up at
+    /// particular ratios.
+    function testFuzz_r12_noLegEverFloorsToZero(uint256 firstMintUsdg, uint256 coreRate, uint256 tiltRate) public {
+        firstMintUsdg = bound(firstMintUsdg, MIN_FIRST_MINT, MINT_CAP);
+        // Rates spanning twelve orders of magnitude: from a leg where $1 buys a
+        // millionth of a token to one where it buys a million.
+        coreRate = bound(coreRate, 1e24, 1e36);
+        tiltRate = bound(tiltRate, 1e24, 1e36);
+
+        adapter.setRate(core, coreRate);
+        adapter.setRate(tilt, tiltRate);
+
+        _mintAtWeights(basket, alice, firstMintUsdg, 0);
+
+        uint256 everything = basket.balanceOf(alice);
+        vm.prank(alice);
+        basket.redeem(everything, alice, _zeros(2));
+
+        assertGt(basket.reserves(core), 0, "core leg survived full redemption");
+        assertGt(basket.reserves(tilt), 0, "tilt leg survived full redemption");
+
+        uint256 shares = _mintAtWeights(basket, bob, MINT_USDG, 0);
+        assertGt(shares, 0, "still mintable at any magnitude");
+    }
+
     /// @notice Redeeming every redeemable share leaves the dead shares and a
     /// matching dust reserve behind, so no leg can ever reach zero and `mint`
     /// can never brick on `EmptyLeg`.

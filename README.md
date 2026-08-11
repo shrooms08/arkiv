@@ -59,6 +59,23 @@ enters the vault" is therefore self-enforcing — against operator error, and
 against assets nobody has classified yet. Confirmed on-chain in both directions
 across all 14 wrappers and three bases.
 
+## A guard demanded for one reason caught a different bug
+
+Review asked for defences against the classic first-depositor inflation attack.
+That attack turned out not to reach Arkiv — it needs the vault to price shares
+off `balanceOf`, and Arkiv prices off an internal `reserves` ledger that a
+donation cannot move.
+
+The dead-shares guard went in anyway, and it closed something else that was
+real. A redeemer takes `floor(B_i * shares / S)`, so before this, the last
+holder leaving could floor a leg to zero and permanently brick minting on
+`EmptyLeg` — no attacker, no donation, just an empty basket. With 1000 dead
+shares the residue is `ceil(B_i * 1000 / S)`, at least 1 wei whenever the leg is
+non-empty, so **every leg stays non-zero for the life of the basket**.
+
+Written up as R12 in [`docs/RISKS.md`](docs/RISKS.md), with a direct test and a
+fuzz across twelve orders of magnitude of reserve size.
+
 ## Status
 
 Contracts complete and tested against live chain state. Frontend and AI
