@@ -78,9 +78,34 @@ fuzz across twelve orders of magnitude of reserve size.
 
 ## Where it runs
 
+**Live: https://arkiv-protocol.vercel.app**
+
 **X Layer testnet (chain 1952)** is the live, clickable deployment. Connect, use
 the faucet, mint, redeem. The assets there are **mocks**, and the app says so on
 every page.
+
+All 21 contracts are deployed and **verified on Sourcify**, including the three
+per-basket `Basket` contracts that actually hold the funds. Every address lives
+in [`deployments/xlayer-testnet.json`](deployments/xlayer-testnet.json), written
+from the broadcast artefact and the chain rather than typed, and read directly by
+the frontend — so a clone resolves the same addresses the live site uses.
+
+| Contract | Address |
+| --- | --- |
+| Arkiv (registry + factory) | [`0x2A775aaE9c11Cf0ae9543f0EB7778976EB69008f`](https://www.oklink.com/xlayer-test/address/0x2A775aaE9c11Cf0ae9543f0EB7778976EB69008f) |
+| MockUSDG (6dp, public faucet) | [`0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0`](https://www.oklink.com/xlayer-test/address/0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0) |
+| MockDexAdapter | [`0x964314bBb3038Ec181834859d81878704630F83a`](https://www.oklink.com/xlayer-test/address/0x964314bBb3038Ec181834859d81878704630F83a) |
+| MockSanctionsList | [`0x2A5Ff16591CcAa115a8b20C1F7Fe31207C8A4038`](https://www.oklink.com/xlayer-test/address/0x2A5Ff16591CcAa115a8b20C1F7Fe31207C8A4038) |
+| Basket — AIBOTTLE | [`0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a`](https://www.oklink.com/xlayer-test/address/0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a) |
+| Basket — STICKYINF | [`0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf`](https://www.oklink.com/xlayer-test/address/0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf) |
+| Basket — SCRATE | [`0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62`](https://www.oklink.com/xlayer-test/address/0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62) |
+
+The 14 mock wrappers are in the manifest. Sourcify source for any of them:
+`https://repo.sourcify.dev/1952/<address>`.
+
+Each basket was minted into with $500 of mock USDG and half redeemed during the
+deploy, so every contract listed has demonstrably worked rather than merely
+compiled.
 
 They are mocks for a reason that is worth stating rather than hiding: **X Layer
 testnet has no xStocks, no USDG and no pools.** There is nothing real to swap
@@ -120,4 +145,6 @@ rather than a hidden one. See R8 in [`docs/RISKS.md`](docs/RISKS.md).
 
 ## Status
 
-Contracts complete, 109 tests. Underwriter live. App deployed to testnet.
+Contracts complete, 109 tests. Underwriter live. Deployed and verified on
+X Layer testnet (21 contracts, three baskets seeded and exercised), app live at
+https://arkiv-protocol.vercel.app. Mainnet launch follows the competition.

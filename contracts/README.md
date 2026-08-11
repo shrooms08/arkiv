@@ -90,6 +90,23 @@ no API key, supports chains 196 and 1952 — and additionally tries OKLink when
 > **production**, not preview, and takes the alias. There is no confirmation. If
 > you want a preview on a fresh project, create the project first.
 
+> **Vercel footgun, second kind.** `vercel deploy --prod` moves the project's
+> *generated* domains but **not a manually assigned alias**. After deploying the
+> testnet build, `arkiv-protocol.vercel.app` still served the previous build —
+> reporting "Arkiv is not deployed on this network" while the new deployment
+> underneath was correct. The deploy said `Ready` and every route returned 200,
+> so nothing looked wrong. Check `vercel alias ls` and re-point explicitly:
+> `vercel alias set <deployment-url> <alias>`.
+
+> **Sourcify + `via_ir`.** `forge verify-contract` submits a minimal standard
+> JSON containing only the files a contract imports. Under `via_ir = true` that
+> can compile to different bytecode than the original build, and Sourcify
+> rejects it with `extra_file_input_bug` (argotorg/sourcify#618) — metadata
+> matches, bytecode does not. Arkiv hits this; the small mocks do not. The fix is
+> to send solc exactly what it got the first time:
+> `forge build --build-info`, then `scripts/sourcify-full-input.py`, which
+> `verify-testnet.sh` falls back to automatically.
+
 ## Design notes
 
 Everything load-bearing is documented at its definition. The three things worth
