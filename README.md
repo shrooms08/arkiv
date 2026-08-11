@@ -9,7 +9,7 @@ whether the thesis was right.
 
 - [`docs/FINDINGS.md`](docs/FINDINGS.md) — what was verified on chain 196, and how
 - [`docs/RISKS.md`](docs/RISKS.md) — what this design does not fix
-- [`contracts/`](contracts/) — Foundry project, 98 tests including live-fork tests
+- [`contracts/`](contracts/) — Foundry project, 109 tests including live-fork tests
 
 ## Read this before you mint
 
