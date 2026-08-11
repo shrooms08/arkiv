@@ -7,7 +7,7 @@ import { RULES } from "./schema";
  * thesis archived under v1 is not reproducible against v2 and should not be
  * compared to one.
  */
-export const PROMPT_VERSION = "underwriter/2026-08-11.2";
+export const PROMPT_VERSION = "underwriter/2026-08-11.3";
 
 function assetTable(): string {
   const rows = ASSETS.map((a) => {
@@ -41,10 +41,12 @@ Only these assets exist. There is nothing else to hold, and no cash position.
 SYMBOL  ROLE  NAME           LIQUIDITY
 ${assetTable()}
 
-Core assets (GLDx, QQQx, SPYx, IWMx) sit in the deepest pools. GLDx is gold and is
-the deepest of all — it is the natural anchor for a macro or defensive thesis, not
-a filler. Tilt assets are single names in thinner pools; they are how a view gets
-expressed, but each one costs slippage.
+ROLE means LIQUIDITY DEPTH, not investment style. "core" assets sit in the deepest
+pools; "tilt" assets sit in thinner ones and cost more slippage. That is the whole
+meaning. IWMx is core because the Russell 2000 pool is deep, even though a
+small-cap bet is a "tilt" in ordinary usage — do not let the label mislead you.
+GLDx is core and is the deepest pool of all, which makes gold a real anchor for a
+macro or defensive thesis rather than a filler.
 
 ## The rules
 
@@ -52,8 +54,12 @@ expressed, but each one costs slippage.
 - Weights in basis points, summing to exactly ${RULES.totalBps}.
 - No holding below ${RULES.minLegBps} bps. A ${RULES.minLegBps / 100}% position is not a view, it is noise
   that costs gas and slippage.
-- Core assets must total between ${RULES.minCoreBps} and ${RULES.maxCoreBps} bps. The floor keeps mint
-  execution sane; the ceiling stops the basket collapsing into an index fund.
+- Core assets must total AT LEAST ${RULES.minCoreBps} bps. There is no upper limit — this is
+  purely about keeping the mint in deep pools, and a basket that is mostly index
+  is less risky, not more.
+- You must name one holding as \`primaryExpression\`: the single position that most
+  directly expresses the thesis. It must be one of your holdings and must carry at
+  least ${RULES.minPrimaryExpressionBps} bps. This is what stops a legal basket from expressing nothing.
 - No duplicates.
 
 These are hard. A basket that breaks one is rejected outright and not repaired.
@@ -84,6 +90,19 @@ description of what the company does — the reader knows what Apple is. If a
 holding's rationale could be pasted onto any other basket, either fix the rationale
 or drop the holding.
 
+**Every holding needs a positive reason to be there.** If a position exists only to
+make the weights add up, or to hedge against your own thesis being wrong, the
+basket has too many legs — drop it and redistribute. Six holdings you can defend
+beat seven with an apology in one of them. Never write a rationale that concedes
+the position is filler; if you find yourself writing "not a conviction position",
+delete the holding instead.
+
+**A rationale must name a causal mechanism, not a historical correlation.** "X has
+historically moved with Y" is not an argument, it is an observation that may stop
+being true precisely when you need it. Say *why* the thing happens — a cost
+structure, a contract, a supply constraint, a source of pricing power, a balance
+sheet. Correlation can support an argument; it cannot be the argument.
+
 ## Length budgets
 
 These are hard limits, and output that exceeds them is rejected:
@@ -100,20 +119,31 @@ Two rejections are far more common than any other, and both are arithmetic you
 can do before writing:
 
 1. Add up every weightBps. It must equal exactly 10000.
-2. Add up the weights of GLDx, QQQx, SPYx and IWMx only — those four are the
-   core assets. That total must land between ${RULES.minCoreBps} and ${RULES.maxCoreBps}.
+2. Add up the weights of GLDx, QQQx, SPYx and IWMx only — those four are the core
+   assets. That total must be at least ${RULES.minCoreBps}. There is no maximum.
+3. Check that \`primaryExpression\` names one of your holdings and that the holding
+   carries at least ${RULES.minPrimaryExpressionBps} bps.
 
-The second one catches people out. IWMx is the small-cap index and it is CORE,
-not a tilt — so a small-cap thesis expressed through IWMx eats the core budget
-fast, and you need genuine tilt holdings alongside it to stay under the ceiling.
-Gold is core too. If your first draft lands outside the band, move weight between
-core and tilt rather than abandoning the view.
+Note that a holding can be both: if the thesis is about small caps, IWMx is the
+liquidity anchor AND the primary expression, and there is no contradiction.
 
 ## Confidence
 
-Say "low" when it is low. A thesis built on a stated hunch with no mechanism is low
-confidence, and labelling it high is the kind of thing that makes the whole archive
-worth less.`;
+Rate the thesis on whether it can be CHECKED and whether it can be EXPRESSED with
+the assets available — not on how strongly the person seems to feel about it.
+
+- **high** — the falsifier's observables are directly measurable on a known
+  schedule (an earnings date, a scheduled CPI print, an index return over a fixed
+  window), AND the allowlist expresses the thesis cleanly rather than by proxy.
+- **medium** — one of those holds but not both. Either the observable needs
+  interpretation, or the best available assets are an approximation of the view.
+- **low** — the thesis depends on something unobservable or unscheduled (sentiment,
+  a private decision, "the market realising" something), or the allowlist forces a
+  distant proxy that only loosely tracks what is actually believed.
+
+Use the whole range. A thesis about a scheduled CPI print held through gold is a
+genuinely different object from a vibe about market rotation held through the
+nearest three tickers, and rating both "medium" tells the reader nothing.`;
 
 export function buildUserPrompt(thesis: string): string {
   return [

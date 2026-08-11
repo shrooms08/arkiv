@@ -71,10 +71,20 @@ export function checkConstraints(thesis: Thesis): ConstraintViolation[] {
       detail: `Core assets are ${coreBps} bps; the minimum is ${RULES.minCoreBps}. Core assets (GLDx, QQQx, SPYx, IWMx) sit in the deepest pools and keep mint slippage manageable.`,
     });
   }
-  if (coreBps > RULES.maxCoreBps) {
+  // There is no core ceiling. Expression is enforced directly instead, which is
+  // what the ceiling was clumsily proxying for — and unlike a ceiling it does
+  // not fight the floor when the deepest asset IS the thesis (a small-cap view
+  // through IWMx).
+  const primary = holdings.find((h) => h.symbol === thesis.primaryExpression);
+  if (!primary) {
     violations.push({
-      rule: "core-ceiling",
-      detail: `Core assets are ${coreBps} bps; the maximum is ${RULES.maxCoreBps}. Above that the basket stops expressing a distinct view and becomes an index fund.`,
+      rule: "primary-expression-missing",
+      detail: `primaryExpression is ${thesis.primaryExpression}, which is not one of the holdings. It must name a holding in this basket.`,
+    });
+  } else if (primary.weightBps < RULES.minPrimaryExpressionBps) {
+    violations.push({
+      rule: "primary-expression-weight",
+      detail: `${primary.symbol} is named as the primary expression but carries only ${primary.weightBps} bps; the minimum is ${RULES.minPrimaryExpressionBps}. If the thesis is really expressed by this holding, weight it like it. If not, name the holding that does.`,
     });
   }
 

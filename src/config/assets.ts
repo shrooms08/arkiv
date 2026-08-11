@@ -333,9 +333,39 @@ export const ALLOWLIST: readonly string[] = ASSETS.map((a) =>
 /** Symbols the AI underwriter is permitted to emit. */
 export const ALLOWED_SYMBOLS: readonly string[] = ASSETS.map((a) => a.symbol);
 
-/** Core-plus-tilt: index assets must be at least this share of a basket. */
+/**
+ * Index assets must be at least this share of a basket.
+ *
+ * This is a LIQUIDITY rule, not a style rule: core assets sit in the deepest
+ * pools, so the floor is what keeps mint slippage inside the 200 bp budget. It
+ * is enforced on-chain in `Arkiv.createBasket` because it protects execution.
+ *
+ * There is deliberately no ceiling. A ceiling was tried and removed: it was
+ * doing product work (stopping a boring 90%-index basket) under a risk label,
+ * and it collided with the floor whenever the deepest asset was also the most
+ * direct expression of the thesis — a small-cap view through IWMx, which is
+ * simultaneously the liquidity anchor and the point. Expression is now enforced
+ * by `primaryExpression` in the underwriting schema, which is the constraint
+ * that was actually wanted.
+ */
 export const MIN_CORE_BPS = 5000 as const;
-export const MAX_CORE_BPS = 6000 as const;
+
+/**
+ * The primary expression holding must carry at least this weight. This is what
+ * stops a basket that technically satisfies the allowlist from failing to
+ * express anything.
+ */
+export const MIN_PRIMARY_EXPRESSION_BPS = 1500 as const;
+
+/**
+ * `core` and `tilt` mean liquidity depth to us and read as style labels to a
+ * user — a mismatch that actively misleads, since IWMx is "core" while a
+ * small-cap bet is a tilt in ordinary usage. Never show the raw role.
+ */
+export const ROLE_LABEL: Record<AssetRole, string> = {
+  core: "Liquidity anchor",
+  tilt: "Thesis expression",
+};
 
 /** Launch mint cap, in USDG base units (6 decimals) = $5,000. */
 export const MINT_CAP_USDG = 5_000_000_000n;

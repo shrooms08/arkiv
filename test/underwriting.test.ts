@@ -16,6 +16,7 @@ function baseThesis(overrides: Partial<Thesis> = {}): Thesis {
       { symbol: "SPYx", weightBps: 5000, rationale: "y".repeat(50) },
       { symbol: "NVDAx", weightBps: 5000, rationale: "z".repeat(50) },
     ],
+    primaryExpression: "NVDAx",
     falsifier: {
       claim: "c".repeat(30),
       observable: "o".repeat(30),
@@ -52,12 +53,15 @@ describe("constraints", () => {
           { symbol: "NVDAx", weightBps: 3000, rationale: "z".repeat(50) },
           { symbol: "TSLAx", weightBps: 3000, rationale: "w".repeat(50) },
         ],
+        primaryExpression: "NVDAx",
       }),
     );
     expect(v.map((x) => x.rule)).toContain("core-floor");
   });
 
-  it("rejects a core allocation above the ceiling", () => {
+  it("allows an index-heavy basket — there is deliberately no core ceiling", () => {
+    // A 90% index basket is less risky, not more. The old ceiling was doing
+    // product work under a risk label; expression is enforced separately.
     const v = checkConstraints(
       baseThesis({
         holdings: [
@@ -65,9 +69,44 @@ describe("constraints", () => {
           { symbol: "QQQx", weightBps: 4000, rationale: "z".repeat(50) },
           { symbol: "NVDAx", weightBps: 2000, rationale: "w".repeat(50) },
         ],
+        primaryExpression: "NVDAx",
       }),
     );
-    expect(v.map((x) => x.rule)).toContain("core-ceiling");
+    expect(v).toEqual([]);
+  });
+
+  it("rejects a primaryExpression that is not a holding", () => {
+    const v = checkConstraints(baseThesis({ primaryExpression: "TSLAx" }));
+    expect(v.map((x) => x.rule)).toContain("primary-expression-missing");
+  });
+
+  it("rejects a primaryExpression carrying less than 1500 bps", () => {
+    const v = checkConstraints(
+      baseThesis({
+        holdings: [
+          { symbol: "SPYx", weightBps: 9000, rationale: "y".repeat(50) },
+          { symbol: "NVDAx", weightBps: 1000, rationale: "z".repeat(50) },
+        ],
+        primaryExpression: "NVDAx",
+      }),
+    );
+    expect(v.map((x) => x.rule)).toContain("primary-expression-weight");
+  });
+
+  it("lets one holding be both the liquidity anchor and the primary expression", () => {
+    // The case that broke the old ceiling: a small-cap thesis through IWMx.
+    const v = checkConstraints(
+      baseThesis({
+        holdings: [
+          { symbol: "IWMx", weightBps: 3000, rationale: "y".repeat(50) },
+          { symbol: "SPYx", weightBps: 2000, rationale: "z".repeat(50) },
+          { symbol: "AMDx", weightBps: 3000, rationale: "w".repeat(50) },
+          { symbol: "COINx", weightBps: 2000, rationale: "v".repeat(50) },
+        ],
+        primaryExpression: "IWMx",
+      }),
+    );
+    expect(v).toEqual([]);
   });
 
   it("rejects duplicates", () => {
@@ -90,6 +129,7 @@ describe("constraints", () => {
           { symbol: "NVDAx", weightBps: 4100, rationale: "z".repeat(50) },
           { symbol: "AMDx", weightBps: 300, rationale: "w".repeat(50) },
         ],
+        primaryExpression: "NVDAx",
       }),
     );
     expect(v.map((x) => x.rule)).toContain("min-leg");
@@ -101,7 +141,7 @@ describe("constraints", () => {
       weightBps: i === 0 ? 10000 - 8 * 1000 + 1000 : 1000,
       rationale: "r".repeat(50),
     }));
-    const v = checkConstraints(baseThesis({ holdings }));
+    const v = checkConstraints(baseThesis({ holdings, primaryExpression: holdings[0]!.symbol }));
     expect(v.map((x) => x.rule)).toContain("leg-count");
   });
 });
@@ -162,6 +202,12 @@ describe("recorded fixtures", () => {
         .filter((h) => assetBySymbol(h.symbol)?.role === "core")
         .reduce((a, h) => a + h.weightBps, 0);
       expect(coreBps).toBeGreaterThanOrEqual(RULES.minCoreBps);
+
+      const primary = record.thesis.holdings.find(
+        (h) => h.symbol === record.thesis.primaryExpression,
+      );
+      expect(primary).toBeDefined();
+      expect(primary!.weightBps).toBeGreaterThanOrEqual(RULES.minPrimaryExpressionBps);
 
       // Provenance must be recorded, or the basket is not reproducible.
       expect(record.model).toBeTruthy();

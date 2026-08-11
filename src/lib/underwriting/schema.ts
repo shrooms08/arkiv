@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { ALLOWED_SYMBOLS, MAX_CORE_BPS, MIN_CORE_BPS } from "@/config/assets";
+import {
+  ALLOWED_SYMBOLS,
+  MIN_CORE_BPS,
+  MIN_PRIMARY_EXPRESSION_BPS,
+} from "@/config/assets";
 
 /**
  * The shape the underwriter must emit.
@@ -72,6 +76,11 @@ export const ThesisSchema = z.object({
     .max(800)
     .describe("What is believed and why, in plain language. No hedging, no disclaimers."),
   holdings: z.array(HoldingSchema).min(2).max(8),
+  primaryExpression: z
+    .enum(ALLOWED_SYMBOLS)
+    .describe(
+      "The one holding that most directly expresses this thesis. Must be one of the holdings, and must carry at least 1500 bps.",
+    ),
   falsifier: FalsifierSchema,
   confidence: z
     .enum(["low", "medium", "high"])
@@ -89,5 +98,5 @@ export const RULES = {
   minLegBps: 500,
   totalBps: 10_000,
   minCoreBps: MIN_CORE_BPS,
-  maxCoreBps: MAX_CORE_BPS,
+  minPrimaryExpressionBps: MIN_PRIMARY_EXPRESSION_BPS,
 } as const;

@@ -313,12 +313,20 @@ screening should see that the asymmetry was chosen, not overlooked.
 ≥ 500 bps, strictly ascending (which is how duplicates are rejected), every leg
 allowlisted, and core ≥ 5000 bps.
 
-It does **not** enforce the 6000 bps core *ceiling* that `assets.ts` carries.
-That ceiling is an expression band for the AI underwriter, not a safety property:
-a basket that is 100% index is less risky than one at the floor, and the vault has
-no business rejecting it. The floor protects mint execution by keeping size in
-the deeper pools; the ceiling only shapes what the model proposes, so it is
-enforced where the model's output is validated, not in the vault.
+It does not enforce any core *ceiling*, and there no longer is one anywhere.
+
+A 6000 bps ceiling existed briefly in `assets.ts` as an underwriter-side rule.
+It was removed because it conflated two orthogonal properties under one number:
+`core` means **liquidity depth** (why the floor exists — it protects mint
+execution) while the ceiling was really enforcing **thesis expression** (stopping
+a boring all-index basket). The two collided the first time the deepest available
+asset was also the most direct expression of a view — a small-cap thesis through
+IWMx — and the rule rejected a perfectly sensible basket twice.
+
+Expression is now enforced directly: the underwriting schema requires a
+`primaryExpression` naming the holding that carries the thesis, weighted at least
+1500 bps. That is a product rule and lives with the model's output validation. The
+vault still enforces only the floor, because only the floor is about risk.
 
 Basket creation is otherwise permissionless. Everything that matters is checked
 on-chain, so there is nothing an untrusted creator can smuggle past — and the
