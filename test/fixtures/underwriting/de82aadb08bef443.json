@@ -1,0 +1,66 @@
+{
+  "thesisHash": "de82aadb08bef443",
+  "input": "Everyone is obsessed with megacap tech but I think the interesting move over the\n   next year is small caps catching a bid as rates come down. Big tech is priced\n   for perfection. I still want some index exposure because I might be early, but\n   I want the tilt to be real.",
+  "model": "claude-sonnet-4-6",
+  "promptVersion": "underwriter/2026-08-11.2",
+  "effort": "medium",
+  "mode": "live",
+  "attempts": 1,
+  "createdAt": "2026-08-11T07:00:35.219Z",
+  "thesis": {
+    "title": "Small Cap Rate Relief",
+    "ticker": "SMCPRATE",
+    "summary": "As rates decline, small caps stand to benefit disproportionately — they carry more floating-rate debt and have been starved of capital during the high-rate era. Megacap tech is priced for perfection; any stumble punishes it hard. The core holds SPY and QQQ for broad coverage in case this is early, but the real bet is on IWM catching a sustained bid as the rate environment shifts. The tilt to COIN adds a rate-sensitive, risk-on kicker that historically moves with small-cap sentiment.",
+    "holdings": [
+      {
+        "symbol": "IWMx",
+        "weightBps": 3000,
+        "rationale": "The primary expression of the thesis. Small caps carry more variable-rate debt than large caps, so a falling-rate environment directly reduces their cost of capital. IWM is the cleanest, most liquid way to hold this view at scale."
+      },
+      {
+        "symbol": "SPYx",
+        "weightBps": 1500,
+        "rationale": "Insurance against being early. If small caps lag and megacap continues to dominate, SPY captures enough of that return to prevent a catastrophic miss. Kept lean enough not to dilute the core small-cap bet."
+      },
+      {
+        "symbol": "QQQx",
+        "weightBps": 500,
+        "rationale": "Minimal tech exposure as a concession to the possibility that the AI trade still has legs. At 500 bps this is a hedge against being entirely wrong on megacap, not a conviction position."
+      },
+      {
+        "symbol": "COINx",
+        "weightBps": 2000,
+        "rationale": "Coinbase is a high-beta, rate-sensitive risk-on asset that historically correlates with small-cap sentiment rather than megacap. Falling rates and improved liquidity conditions tend to lift speculative and growth names like COIN alongside IWM."
+      },
+      {
+        "symbol": "AMDx",
+        "weightBps": 1500,
+        "rationale": "AMD provides a mid-tier semiconductor tilt — less priced-for-perfection than NVDA, with more room to re-rate if broader market breadth expands. A proxy for the thesis that risk appetite spreads beyond the top five names."
+      },
+      {
+        "symbol": "AVGOx",
+        "weightBps": 1500,
+        "rationale": "Broadcom sits at the intersection of AI infrastructure and cyclical recovery. If rates fall and the economy lands softly, AVGO benefits from both enterprise spending re-acceleration and its exposure to custom silicon demand."
+      }
+    ],
+    "falsifier": {
+      "claim": "Small caps will outperform as rates fall. The thesis rests on the Federal Reserve delivering meaningful rate cuts within the next 12 months and that translating into IWM outperforming QQQ.",
+      "observable": "IWM total return vs QQQ total return, measured over the 12-month holding period. Fed funds rate trajectory as reported by FOMC meeting statements.",
+      "breachCondition": "If IWM underperforms QQQ by more than 5 percentage points over 12 months, or if the Fed delivers fewer than two 25bp cuts in the period, the thesis is broken.",
+      "horizon": "12M"
+    },
+    "confidence": "medium"
+  },
+  "costs": [
+    {
+      "model": "claude-sonnet-4-6",
+      "inputTokens": 105,
+      "outputTokens": 700,
+      "cacheWriteTokens": 0,
+      "cacheReadTokens": 2502,
+      "usd": 0.0115656,
+      "unpriced": false
+    }
+  ],
+  "totalUsd": 0.0115656
+}
