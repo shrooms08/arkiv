@@ -1,0 +1,24 @@
+{
+  "chainId": 1952,
+  "network": "X Layer Testnet",
+  "explorer": "https://www.oklink.com/xlayer-test",
+  "status": "not-deployed",
+  "note": "Populated by scripts/record-deployment.ts after a successful broadcast. Every address here must be verifiable on the explorer by someone who is not us.",
+  "usesMockAssets": true,
+  "deployedAt": null,
+  "deployBlock": null,
+  "deployer": null,
+  "contracts": {
+    "Arkiv": null,
+    "MockDexAdapter": null,
+    "ArkivQuoter": null,
+    "MockUSDG": null,
+    "MockSanctionsList": null
+  },
+  "assets": {},
+  "baskets": [],
+  "transactions": {
+    "mint": null,
+    "redeem": null
+  }
+}

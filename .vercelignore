@@ -1,0 +1,9 @@
+# Never upload secrets. .env holds the Anthropic key and the deploy private key.
+.env
+.env.*
+!.env.example
+
+# Not part of the web build.
+contracts/
+logs/
+broadcast/

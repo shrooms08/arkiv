@@ -26,3 +26,5 @@ ol.archive-list { list-style: none; padding: 0; }
 .site-header nav .wallet-bar { margin-left: auto; }
 .error { border: 1px solid #b00; padding: 0.75rem; margin: var(--gap) 0; }
 .holding-primary { background: #fafafa; }
+.network-banner { border-bottom: 1px solid var(--line); background: #fffbe6; padding: 0.6rem var(--gap); }
+.network-banner strong { margin-right: 0.35em; }

@@ -1,0 +1,22 @@
+{
+  "chainId": 196,
+  "network": "X Layer",
+  "explorer": "https://www.oklink.com/xlayer",
+  "status": "not-deployed",
+  "note": "Populated by scripts/record-deployment.ts after a successful broadcast. Every address here must be verifiable on the explorer by someone who is not us.",
+  "usesMockAssets": false,
+  "deployedAt": null,
+  "deployBlock": null,
+  "deployer": null,
+  "contracts": {
+    "Arkiv": null,
+    "XLayerV3Adapter": null,
+    "ArkivQuoter": null
+  },
+  "assets": {},
+  "baskets": [],
+  "transactions": {
+    "mint": null,
+    "redeem": null
+  }
+}

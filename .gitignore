@@ -9,3 +9,4 @@ broadcast/
 logs/
 next-env.d.ts
 *.tsbuildinfo
+.vercel

@@ -16,19 +16,18 @@ export const xLayer = defineChain({
 });
 
 /**
- * X Layer testnet.
+ * X Layer testnet — chain id **1952**, verified against `testrpc.xlayer.tech`.
+ * (Not 195; that was an incorrect assumption in an earlier revision.)
  *
- * Included for wallet/network plumbing only. **The protocol cannot actually run
- * here**: xStocks wrappers, USDG and the V3-fork pools are not deployed on
- * testnet, so there is nothing to swap into. A basket minted on testnet would
- * have no underlying. The app therefore lets you connect on testnet and tells you
- * plainly that the universe is absent, rather than pretending.
- *
- * Real end-to-end verification runs against a LOCAL FORK of mainnet, where the
- * pools are real — see `anvil` in contracts/README.md.
+ * The real xStocks wrappers, USDG and V3-fork pools do not exist here, so the
+ * testnet deployment runs against MOCKS: a mock USDG with a public faucet, mock
+ * wrappers, and a fixed-rate mock adapter. That makes testnet a working
+ * demonstration of the mechanism anyone can click through without holding
+ * anything real — which is the point — but the assets are not real xStocks and
+ * the UI says so on every page.
  */
 export const xLayerTestnet = defineChain({
-  id: 195,
+  id: 1952,
   name: "X Layer Testnet",
   testnet: true,
   nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
@@ -51,7 +50,12 @@ export const xLayerFork = defineChain({
 
 export const SUPPORTED_CHAINS = [xLayer, xLayerTestnet] as const;
 
-/** True when the connected chain can actually mint — i.e. the universe exists. */
+/** True when the connected chain has a deployment we can mint into. */
 export function chainHasUniverse(chainId: number | undefined): boolean {
-  return chainId === 196;
+  return chainId === xLayer.id || chainId === xLayerTestnet.id;
+}
+
+/** True when the assets on this chain are mocks rather than real xStocks. */
+export function chainUsesMocks(chainId: number | undefined): boolean {
+  return chainId === xLayerTestnet.id;
 }

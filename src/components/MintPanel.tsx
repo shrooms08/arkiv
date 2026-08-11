@@ -12,7 +12,7 @@ import { chainHasUniverse } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { fetchMintQuotes, withSlippage, type LegQuote } from "@/lib/chain/quoter";
 import { splitFor } from "@/lib/chain/impact";
-import { WrapperDisclosure } from "./WrapperDisclosure";
+import { explainRevert } from "@/lib/chain/errors";
 import type { Thesis } from "@/lib/underwriting/schema";
 
 type Step = "idle" | "creating" | "approving" | "minting" | "done" | "error";
@@ -161,7 +161,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
       setStep("done");
     } catch (err) {
       setStep("error");
-      setMessage(err instanceof Error ? err.message : String(err));
+      setMessage(explainRevert(err));
     }
   }
 
@@ -171,8 +171,6 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   return (
     <section className="mint-panel">
       <h2>Mint</h2>
-
-      <WrapperDisclosure />
 
       <fieldset className="mint-controls">
         <label htmlFor="amount">Amount (USDG)</label>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ROLE_LABEL, assetBySymbol } from "@/config/assets";
 import { MintPanel } from "@/components/MintPanel";
+import { WrapperDisclosure } from "@/components/WrapperDisclosure";
 import { findRecord } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,10 @@ export default async function UnderwritePage({
           <dd className="falsifier-horizon">{t.falsifier.horizon}</dd>
         </dl>
       </section>
+
+      {/* Rendered by the page, not by MintPanel: the disclosure must not be able
+          to disappear along with the mint UI when no deployment is configured. */}
+      <WrapperDisclosure />
 
       <MintPanel thesis={t} thesisHash={record.thesisHash} />
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { NetworkBanner } from "@/components/NetworkBanner";
 import { WalletBar } from "@/components/WalletBar";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <WalletBar />
             </nav>
           </header>
+          <NetworkBanner />
           {children}
         </Providers>
       </body>

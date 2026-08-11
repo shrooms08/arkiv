@@ -7,6 +7,7 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { ROLE_LABEL, USDG, assetByAddress } from "@/config/assets";
 import { basketAbi } from "@/lib/chain/abis";
+import { explainRevert } from "@/lib/chain/errors";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
 import { fetchExitValues, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
@@ -33,7 +34,7 @@ export function BasketView({ address }: { address: Address }) {
         setPrices(await fetchExitValues(client, deployment.quoter, s.tokens));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(explainRevert(e));
     }
   }
 
@@ -61,7 +62,7 @@ export function BasketView({ address }: { address: Address }) {
       await waitForTransactionReceipt(config, { hash });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(explainRevert(e));
     } finally {
       setRedeeming(false);
     }
