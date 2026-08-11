@@ -2,6 +2,7 @@ import type { Address, PublicClient } from "viem";
 
 import { ASSETS, DEX, USDG, assetByAddress } from "@/config/assets";
 import { quoterAbi } from "./abis";
+import { symbolFor, type Deployment } from "./deployments";
 
 /**
  * Exit value — what a holding could actually be sold for right now, priced off
@@ -144,4 +145,73 @@ export function valueComposition(
     })),
     unpriced,
   };
+}
+
+
+/** Mock adapter's rate getter. `price = 1e36 / rate`, the inverse of the deploy. */
+const mockAdapterAbi = [
+  {
+    type: "function",
+    name: "rate",
+    stateMutability: "view",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+/**
+ * Exit value on a MOCK deployment.
+ *
+ * There are no V3 pools on testnet, so there is nothing for the quoter to quote.
+ * Prices come from the fixed-rate adapter instead — which is honest about what
+ * it is: a stable number chosen to match the mainnet exit value measured against
+ * the real pool, not a discovered price.
+ */
+export async function fetchMockExitValues(
+  client: PublicClient,
+  deployment: Deployment,
+  wrappers: readonly Address[],
+): Promise<Map<Address, LegExitValue>> {
+  const results = new Map<Address, LegExitValue>();
+  if (!deployment.mockAdapter) return results;
+
+  const rates = await client.multicall({
+    contracts: wrappers.map((w) => ({
+      address: deployment.mockAdapter!,
+      abi: mockAdapterAbi,
+      functionName: "rate" as const,
+      args: [w],
+    })),
+    allowFailure: true,
+  });
+
+  wrappers.forEach((w, i) => {
+    const r = rates[i];
+    const symbol = symbolFor(deployment, w) ?? w;
+    if (!r || r.status !== "success" || typeof r.result !== "bigint" || r.result === 0n) {
+      results.set(w, {
+        symbol,
+        wrapper: w,
+        usdgPerUnit: null,
+        unavailableReason: "No rate configured for this asset.",
+      });
+      return;
+    }
+    results.set(w, { symbol, wrapper: w, usdgPerUnit: 10n ** 36n / r.result });
+  });
+
+  return results;
+}
+
+/** Prices a basket's legs however this chain can be priced. */
+export async function fetchExitValuesFor(
+  client: PublicClient,
+  deployment: Deployment,
+  wrappers: readonly Address[],
+): Promise<Map<Address, LegExitValue>> {
+  if (deployment.pricing === "mock-adapter") {
+    return fetchMockExitValues(client, deployment, wrappers);
+  }
+  if (!deployment.quoter) return new Map();
+  return fetchExitValues(client, deployment.quoter, wrappers);
 }

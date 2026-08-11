@@ -231,6 +231,17 @@ vault, only misroute new mints.
 **Mitigation:** a multisig is the production answer, documented as such. Until
 then the owner key is a stated trust assumption, not a hidden one.
 
+**As deployed.** The testnet deployment is owned by a freshly generated EOA,
+`0xd8157D6E2E3017cB28F05A8E9781Af0A1bD2f080`, created for this purpose and used
+for nothing else. That is acceptable for a testnet demonstration holding mock
+assets and is **not** acceptable for mainnet: before any launch holding real
+xStocks, ownership should move to a 2-of-3 Safe — the same standard we hold the
+wrapper issuer to in R1. It would be incoherent to disclose their three keys as a
+risk while running Arkiv on one.
+
+Ownership transfer is two-step (`Ownable2Step`), so the handover cannot be
+fumbled into a dead address.
+
 ---
 
 ## R9 — AI underwriting output is not investment advice. MEDIUM. Disclosure + constraints.

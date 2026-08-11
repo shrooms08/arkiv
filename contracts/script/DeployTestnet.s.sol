@@ -7,66 +7,64 @@ import {Arkiv} from "../src/Arkiv.sol";
 import {Basket} from "../src/Basket.sol";
 import {XLayerConfig} from "../src/config/XLayerConfig.sol";
 import {MockDexAdapter, MockSanctionsList, MockUSDG, MockWrapper} from "../src/mocks/TestnetMocks.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * Deploys the full protocol to X Layer testnet (chain 1952) against mocks, then
- * seeds the three sample baskets and exercises a mint and a redeem on each — so
- * the deployment that gets verified is one that has demonstrably worked, not one
- * that merely compiled.
+ * Deploys the full protocol to X Layer testnet (chain 1952) against mocks, seeds
+ * the three sample baskets, and mints and redeems on each — so the deployment
+ * that gets verified is one that has demonstrably worked, not one that merely
+ * compiled.
  *
- *   forge script script/DeployTestnet.s.sol --rpc-url https://testrpc.xlayer.tech \
- *     --broadcast --private-key $DEPLOYER_PRIVATE_KEY
+ *   forge script script/DeployTestnet.s.sol \
+ *     --rpc-url https://testrpc.xlayer.tech --broadcast \
+ *     --private-key $DEPLOYER_PRIVATE_KEY
  */
 contract DeployTestnet is Script {
-    // Rate = wrapper units per USDG base unit, 18-dp. 1e30 means $1 buys one
-    // whole 18-dp token, so a rate of 1e30/price gives a token worth `price`.
-    function rateFor(uint256 priceUsd) internal pure returns (uint256) {
-        return 1e30 / priceUsd;
+    /// Prices in USDG base units (6dp). These are the EXIT VALUES measured
+    /// against the real mainnet pools by `ForkQuoter.t.sol` — not round numbers.
+    /// A mock that returns realistic prices demonstrates the mechanism; a mock
+    /// returning $100.00 for everything looks like a toy.
+    function prices() internal pure returns (uint256[14] memory p) {
+        p[0] = 397_983_581; // GLDx
+        p[1] = 723_103_866; // QQQx
+        p[2] = 777_050_280; // SPYx
+        p[3] = 301_959_676; // IWMx
+        p[4] = 223_734_240; // NVDAx
+        p[5] = 327_984_850; // TSLAx
+        p[6] = 505_355_839; // MSFTx
+        p[7] = 274_080_897; // AMZNx
+        p[8] = 152_364_898; // COINx
+        p[9] = 598_075_584; // METAx
+        p[10] = 431_695_316; // AVGOx
+        p[11] = 356_140_481; // GOOGLx
+        p[12] = 307_603_025; // AAPLx
+        p[13] = 472_755_816; // AMDx
     }
 
-    struct Deployed {
-        MockUSDG usdg;
-        MockSanctionsList sanctions;
-        MockDexAdapter adapter;
-        Arkiv arkiv;
-        address[8] wrappers;
-        string[8] symbols;
+    /// Wrapper units (18dp) delivered per USDG base unit (6dp), 1e18 fixed point.
+    /// `amountOut = amountIn * rate / 1e18`, so $1 must buy 1/price of a token:
+    /// 1e6 * rate / 1e18 = 1e24 / priceBaseUnits  =>  rate = 1e36 / priceBaseUnits.
+    function rateFor(uint256 priceBaseUnits) internal pure returns (uint256) {
+        return 1e36 / priceBaseUnits;
     }
+
+    MockUSDG internal usdg;
+    MockDexAdapter internal adapter;
+    Arkiv internal arkiv;
+    address[14] internal wrappers;
 
     function run() external {
         vm.startBroadcast();
         address deployer = tx.origin;
 
-        // ---- mocks -----------------------------------------------------
-        MockUSDG usdg = new MockUSDG();
+        usdg = new MockUSDG();
         MockSanctionsList sanctions = new MockSanctionsList();
-        MockDexAdapter adapter = new MockDexAdapter(address(usdg), deployer);
+        adapter = new MockDexAdapter(address(usdg), deployer);
 
-        // Eight assets: enough for all three sample baskets. Prices roughly
-        // match the mainnet exit values so the demo reads plausibly.
-        string[8] memory syms = ["GLDx", "QQQx", "SPYx", "IWMx", "NVDAx", "AVGOx", "MSFTx", "AMDx"];
-        string[8] memory names = [
-            "Mock Gold xStock",
-            "Mock Nasdaq 100 xStock",
-            "Mock S&P 500 xStock",
-            "Mock Russell 2000 xStock",
-            "Mock NVIDIA xStock",
-            "Mock Broadcom xStock",
-            "Mock Microsoft xStock",
-            "Mock AMD xStock"
-        ];
-        uint256[8] memory prices = [uint256(398), 723, 777, 302, 224, 432, 505, 473];
-        bool[8] memory isCore = [true, true, true, true, false, false, false, false];
+        string[] memory syms = XLayerConfig.symbols();
+        uint256[14] memory p = prices();
+        bool[] memory isCore = XLayerConfig.isCoreFlags();
 
-        address[8] memory wrappers;
-        for (uint256 i; i < 8; ++i) {
-            wrappers[i] = address(new MockWrapper(names[i], syms[i], address(adapter)));
-            adapter.setRate(wrappers[i], rateFor(prices[i]));
-        }
-
-        // ---- protocol --------------------------------------------------
-        Arkiv arkiv = new Arkiv(
+        arkiv = new Arkiv(
             address(usdg),
             address(sanctions),
             address(adapter),
@@ -74,70 +72,74 @@ contract DeployTestnet is Script {
             XLayerConfig.MIN_FIRST_MINT,
             deployer
         );
-        for (uint256 i; i < 8; ++i) {
+
+        for (uint256 i; i < 14; ++i) {
+            wrappers[i] = address(
+                new MockWrapper(
+                    string.concat("Mock ", syms[i], " xStock"), syms[i], address(adapter)
+                )
+            );
+            adapter.setRate(wrappers[i], rateFor(p[i]));
             arkiv.setAssetAllowed(wrappers[i], true, isCore[i]);
         }
 
         console.log("MockUSDG        ", address(usdg));
-        console.log("MockSanctions   ", address(sanctions));
+        console.log("MockSanctionsList", address(sanctions));
         console.log("MockDexAdapter  ", address(adapter));
         console.log("Arkiv           ", address(arkiv));
-        for (uint256 i; i < 8; ++i) {
+        for (uint256 i; i < 14; ++i) {
             console.log(syms[i], wrappers[i]);
         }
 
-        Deployed memory d = Deployed(usdg, sanctions, adapter, arkiv, wrappers, syms);
-
-        // ---- seed the three sample baskets, then use each ---------------
         usdg.faucet();
 
-        _seedAibottle(d);
-        _seedStickyinf(d);
-        _seedScrate(d);
+        // AIBOTTLE — NVDAx 25 / AVGOx 20 / SPYx 30 / QQQx 25
+        _seed(
+            "AI Infrastructure Bottleneck",
+            "AIBOTTLE",
+            _idx4(4, 10, 2, 1),
+            _w4(2500, 2000, 3000, 2500),
+            "arkiv:e4d242a38e509390"
+        );
+
+        // STICKYINF — GLDx 35 / SPYx 25 / QQQx 10 / IWMx 10 / AVGOx 10 / METAx 10
+        _seed(
+            "Sticky Inflation, Central Bank Blink",
+            "STICKYINF",
+            _idx6(0, 2, 1, 3, 10, 9),
+            _w6(3500, 2500, 1000, 1000, 1000, 1000),
+            "arkiv:2563e23afaa8d654"
+        );
+
+        // SCRATE — IWMx 50 / SPYx 30 / QQQx 20
+        _seed(
+            "Small Cap Rate Relief with Index Hedge",
+            "SCRATE",
+            _idx3(3, 2, 1),
+            _w3(5000, 3000, 2000),
+            "arkiv:de82aadb08bef443"
+        );
 
         vm.stopBroadcast();
     }
 
-    /// AIBOTTLE — NVDAx 25 / AVGOx 20 / SPYx 30 / QQQx 25
-    function _seedAibottle(Deployed memory d) internal {
-        address[] memory tokens = new address[](4);
-        uint16[] memory weights = new uint16[](4);
-        (tokens, weights) = _sorted4(
-            [d.wrappers[4], d.wrappers[5], d.wrappers[2], d.wrappers[1]],
-            [uint16(2500), 2000, 3000, 2500]
-        );
-        _createAndUse(d, "AI Infrastructure Bottleneck", "AIBOTTLE", tokens, weights, "arkiv:e4d242a38e509390");
-    }
-
-    /// STICKYINF — GLDx 35 / SPYx 25 / QQQx 10 / IWMx 10 / AVGOx 10 / MSFTx 10
-    function _seedStickyinf(Deployed memory d) internal {
-        address[6] memory raw = [d.wrappers[0], d.wrappers[2], d.wrappers[1], d.wrappers[3], d.wrappers[5], d.wrappers[6]];
-        uint16[6] memory rawW = [uint16(3500), 2500, 1000, 1000, 1000, 1000];
-        (address[] memory tokens, uint16[] memory weights) = _sorted6(raw, rawW);
-        _createAndUse(d, "Sticky Inflation, Central Bank Blink", "STICKYINF", tokens, weights, "arkiv:2563e23afaa8d654");
-    }
-
-    /// SCRATE — IWMx 50 / SPYx 30 / QQQx 20
-    function _seedScrate(Deployed memory d) internal {
-        address[3] memory raw = [d.wrappers[3], d.wrappers[2], d.wrappers[1]];
-        uint16[3] memory rawW = [uint16(5000), 3000, 2000];
-        (address[] memory tokens, uint16[] memory weights) = _sorted3(raw, rawW);
-        _createAndUse(d, "Small Cap Rate Relief with Index Hedge", "SCRATE", tokens, weights, "arkiv:de82aadb08bef443");
-    }
-
-    /// Creates the basket, mints $500, then redeems half — so the deployed
-    /// artefact is one that has provably worked end to end.
-    function _createAndUse(
-        Deployed memory d,
+    /// Creates, mints $500, then redeems half.
+    function _seed(
         string memory name,
         string memory symbol,
-        address[] memory tokens,
+        uint256[] memory idx,
         uint16[] memory weights,
         string memory thesisURI
     ) internal {
-        address basket = d.arkiv.createBasket(name, symbol, tokens, weights, thesisURI);
+        address[] memory tokens = new address[](idx.length);
+        for (uint256 i; i < idx.length; ++i) {
+            tokens[i] = wrappers[idx[i]];
+        }
+        _sort(tokens, weights);
 
-        uint256 usdgIn = 500_000_000; // $500
+        address basket = arkiv.createBasket(name, symbol, tokens, weights, thesisURI);
+
+        uint256 usdgIn = 500_000_000;
         uint256[] memory split = new uint256[](tokens.length);
         uint256 assigned;
         for (uint256 i; i < tokens.length; ++i) {
@@ -145,55 +147,12 @@ contract DeployTestnet is Script {
             assigned += split[i];
         }
 
-        d.usdg.approve(basket, usdgIn);
-        uint256 shares = Basket(basket).mint(
-            usdgIn, split, new uint256[](tokens.length), 0, tx.origin
-        );
-
+        usdg.approve(basket, usdgIn);
+        uint256 shares =
+            Basket(basket).mint(usdgIn, split, new uint256[](tokens.length), 0, tx.origin);
         Basket(basket).redeem(shares / 2, tx.origin, new uint256[](tokens.length));
 
         console.log(symbol, basket);
-    }
-
-    // Arkiv requires strictly ascending leg addresses. Insertion sort, kept
-    // explicit per arity because Solidity has no generic fixed-array sort.
-    function _sorted3(address[3] memory a, uint16[3] memory w)
-        internal
-        pure
-        returns (address[] memory t, uint16[] memory outW)
-    {
-        t = new address[](3);
-        outW = new uint16[](3);
-        for (uint256 i; i < 3; ++i) {
-            (t[i], outW[i]) = (a[i], w[i]);
-        }
-        _sort(t, outW);
-    }
-
-    function _sorted4(address[4] memory a, uint16[4] memory w)
-        internal
-        pure
-        returns (address[] memory t, uint16[] memory outW)
-    {
-        t = new address[](4);
-        outW = new uint16[](4);
-        for (uint256 i; i < 4; ++i) {
-            (t[i], outW[i]) = (a[i], w[i]);
-        }
-        _sort(t, outW);
-    }
-
-    function _sorted6(address[6] memory a, uint16[6] memory w)
-        internal
-        pure
-        returns (address[] memory t, uint16[] memory outW)
-    {
-        t = new address[](6);
-        outW = new uint16[](6);
-        for (uint256 i; i < 6; ++i) {
-            (t[i], outW[i]) = (a[i], w[i]);
-        }
-        _sort(t, outW);
     }
 
     function _sort(address[] memory t, uint16[] memory w) private pure {
@@ -209,5 +168,47 @@ contract DeployTestnet is Script {
             t[j] = kt;
             w[j] = kw;
         }
+    }
+
+    function _idx3(uint256 a, uint256 b, uint256 c) private pure returns (uint256[] memory r) {
+        r = new uint256[](3);
+        (r[0], r[1], r[2]) = (a, b, c);
+    }
+
+    function _idx4(uint256 a, uint256 b, uint256 c, uint256 d)
+        private
+        pure
+        returns (uint256[] memory r)
+    {
+        r = new uint256[](4);
+        (r[0], r[1], r[2], r[3]) = (a, b, c, d);
+    }
+
+    function _idx6(uint256 a, uint256 b, uint256 c, uint256 d, uint256 e, uint256 f)
+        private
+        pure
+        returns (uint256[] memory r)
+    {
+        r = new uint256[](6);
+        (r[0], r[1], r[2], r[3], r[4], r[5]) = (a, b, c, d, e, f);
+    }
+
+    function _w3(uint16 a, uint16 b, uint16 c) private pure returns (uint16[] memory r) {
+        r = new uint16[](3);
+        (r[0], r[1], r[2]) = (a, b, c);
+    }
+
+    function _w4(uint16 a, uint16 b, uint16 c, uint16 d) private pure returns (uint16[] memory r) {
+        r = new uint16[](4);
+        (r[0], r[1], r[2], r[3]) = (a, b, c, d);
+    }
+
+    function _w6(uint16 a, uint16 b, uint16 c, uint16 d, uint16 e, uint16 f)
+        private
+        pure
+        returns (uint16[] memory r)
+    {
+        r = new uint16[](6);
+        (r[0], r[1], r[2], r[3], r[4], r[5]) = (a, b, c, d, e, f);
     }
 }

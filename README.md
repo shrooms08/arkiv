@@ -76,7 +76,48 @@ non-empty, so **every leg stays non-zero for the life of the basket**.
 Written up as R12 in [`docs/RISKS.md`](docs/RISKS.md), with a direct test and a
 fuzz across twelve orders of magnitude of reserve size.
 
+## Where it runs
+
+**X Layer testnet (chain 1952)** is the live, clickable deployment. Connect, use
+the faucet, mint, redeem. The assets there are **mocks**, and the app says so on
+every page.
+
+They are mocks for a reason that is worth stating rather than hiding: **X Layer
+testnet has no xStocks, no USDG and no pools.** There is nothing real to swap
+into. A "testnet deployment" against the real asset universe is not something
+that exists to be built.
+
+So the same contracts are verified two ways:
+
+- **Mechanism** — deployed to testnet against mocks, where anyone can exercise
+  create → mint → hold → redeem end to end.
+- **Real assets** — the identical code is exercised against the *real* mainnet
+  pools by the fork tests at a pinned block (`contracts/test/fork/`). A $5,000
+  mint blends to 18 bp of slippage; exit values agree with mint-implied prices to
+  within 0.1%; the swap callback is attacked from an EOA and holds. 27 of the 109
+  tests run against live chain-196 state.
+
+The mock adapter's prices are the exit values **measured from those real pools** —
+GLDx $397.98, SPYx $777.05, NVDAx $223.73 — not round numbers. And `MockWrapper`
+deliberately does **not** implement `multiplier()`: Arkiv's allowlist probes for
+that function and refuses anything that answers, because the real xStocks *base*
+tokens rebase and must never enter a vault. A mock that got the property wrong
+would fail to allowlist and abort the deploy. The mock has to be honest for the
+deployment to work at all.
+
+Mainnet launch follows the competition, as its terms require. The mainnet deploy
+script is in the repo, working, and untested against the live chain.
+
+## Who controls it
+
+The Arkiv owner is a **single EOA**. It can pause minting, change the allowlist,
+and swap the DEX adapter. It cannot touch existing holdings — redemption is
+in-kind, pays from each basket's own accounted reserves, and is never pausable.
+
+A multisig is the production answer, and the standard should be the same 2-of-3
+we disclose for the wrappers above. Until then this is a stated trust assumption
+rather than a hidden one. See R8 in [`docs/RISKS.md`](docs/RISKS.md).
+
 ## Status
 
-Contracts complete and tested against live chain state. Frontend and AI
-underwriter in progress.
+Contracts complete, 109 tests. Underwriter live. App deployed to testnet.

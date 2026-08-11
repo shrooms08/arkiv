@@ -5,12 +5,12 @@ import { formatUnits, type Address } from "viem";
 import { useAccount, useChainId, useConfig, usePublicClient, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 
-import { ROLE_LABEL, USDG, assetByAddress } from "@/config/assets";
+import { ROLE_LABEL, USDG, assetByAddress, assetBySymbol } from "@/config/assets";
 import { basketAbi } from "@/lib/chain/abis";
 import { explainRevert } from "@/lib/chain/errors";
-import { deploymentFor } from "@/lib/chain/deployments";
+import { deploymentFor, symbolFor } from "@/lib/chain/deployments";
 import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
-import { fetchExitValues, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
+import { fetchExitValuesFor, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
 
 export function BasketView({ address }: { address: Address }) {
   const client = usePublicClient();
@@ -31,7 +31,7 @@ export function BasketView({ address }: { address: Address }) {
       const s = await fetchBasketState(client, address, account);
       setState(s);
       if (deployment) {
-        setPrices(await fetchExitValues(client, deployment.quoter, s.tokens));
+        setPrices(await fetchExitValuesFor(client, deployment, s.tokens));
       }
     } catch (e) {
       setError(explainRevert(e));
@@ -91,14 +91,17 @@ export function BasketView({ address }: { address: Address }) {
           </thead>
           <tbody>
             {legs.map((leg, i) => {
-              const asset = assetByAddress(leg.wrapper);
+              // On a mock deployment the wrapper addresses are not the mainnet
+              // ones, so resolve symbol via the deployment manifest first.
+              const sym = deployment ? symbolFor(deployment, leg.wrapper) : undefined;
+              const asset = assetByAddress(leg.wrapper) ?? (sym ? assetBySymbol(sym) : undefined);
               const price = prices?.get(leg.wrapper);
               const value = price ? valueOfLeg(leg.units, price.usdgPerUnit) : null;
               const share = composition?.priced.find((p) => p.wrapper === leg.wrapper);
               return (
                 <tr key={leg.wrapper} className="basket-leg">
                   <td>
-                    <strong>{asset?.symbol ?? leg.wrapper}</strong>
+                    <strong>{asset?.symbol ?? sym ?? leg.wrapper}</strong>
                     <br />
                     <span className="muted">{asset?.label}</span>
                   </td>

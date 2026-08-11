@@ -9,8 +9,9 @@ import { useConfig } from "wagmi";
 import { USDG, assetBySymbol } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
 import { chainHasUniverse } from "@/lib/chain/chains";
-import { deploymentFor } from "@/lib/chain/deployments";
+import { deploymentFor, wrapperFor } from "@/lib/chain/deployments";
 import { fetchMintQuotes, withSlippage, type LegQuote } from "@/lib/chain/quoter";
+import { Faucet } from "./Faucet";
 import { splitFor } from "@/lib/chain/impact";
 import { explainRevert } from "@/lib/chain/errors";
 import type { Thesis } from "@/lib/underwriting/schema";
@@ -51,13 +52,17 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   );
 
   // Live per-leg impact from the quoter, re-quoted whenever the size changes.
+  // Only meaningful where real pools exist: the testnet adapter is fixed-rate
+  // with no depth, so there is no impact to measure and the table says so
+  // rather than printing a 0 bp that looks like a measurement.
   useEffect(() => {
-    if (!client || !deployment || usdgIn === 0n) {
+    if (!client || !deployment?.quoter || usdgIn === 0n) {
       setQuotes(null);
       return;
     }
+    const quoter = deployment.quoter;
     let cancelled = false;
-    fetchMintQuotes(client, deployment.quoter, legs)
+    fetchMintQuotes(client, quoter, legs)
       .then((r) => {
         if (cancelled) return;
         setQuotes(r.legs);
@@ -85,8 +90,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
     .filter(Boolean);
   // The contract requires strictly ascending legs; sort holdings to match.
   const ordered = [...thesis.holdings].sort((a, b) => {
-    const aw = (assetBySymbol(a.symbol)?.wrapper ?? "").toLowerCase();
-    const bw = (assetBySymbol(b.symbol)?.wrapper ?? "").toLowerCase();
+    const aw = (wrapperFor(deployment, a.symbol) ?? "").toLowerCase();
+    const bw = (wrapperFor(deployment, b.symbol) ?? "").toLowerCase();
     return aw < bw ? -1 : aw > bw ? 1 : 0;
   });
 
@@ -104,7 +109,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
         args: [
           thesis.title.slice(0, 60),
           thesis.ticker,
-          ordered.map((h) => assetBySymbol(h.symbol)!.wrapper as Address),
+          ordered.map((h) => wrapperFor(deployment!, h.symbol)!),
           ordered.map((h) => h.weightBps),
           `arkiv:${thesisHash}`,
         ],
@@ -131,7 +136,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
       // 2. Approve exactly this mint, not an unbounded allowance.
       setStep("approving");
       const approveHash = await writeContractAsync({
-        address: USDG.address as Address,
+        address: deployment!.usdg,
         abi: erc20Abi,
         functionName: "approve",
         args: [basket, usdgIn],
@@ -171,6 +176,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   return (
     <section className="mint-panel">
       <h2>Mint</h2>
+
+      <Faucet />
 
       <fieldset className="mint-controls">
         <label htmlFor="amount">Amount (USDG)</label>
@@ -219,7 +226,11 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
                 <td>{leg.symbol}</td>
                 <td className="numeric">{formatUnits(leg.usdgIn, USDG.decimals)}</td>
                 <td className="numeric">
-                  {!quotes ? (
+                  {!deployment.quoter ? (
+                    <span className="unavailable" title="Fixed-rate mock adapter — no pool depth to measure against.">
+                      n/a (mock)
+                    </span>
+                  ) : !quotes ? (
                     <span className="muted">quoting…</span>
                   ) : q?.impactBps === null || q === undefined ? (
                     <span className="unavailable">unavailable</span>
@@ -234,7 +245,9 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
             <th>Blended</th>
             <th className="numeric">{formatUnits(usdgIn, USDG.decimals)}</th>
             <th className="numeric">
-              {blendedBps === null ? (
+              {!deployment.quoter ? (
+                <span className="unavailable">n/a (mock)</span>
+              ) : blendedBps === null ? (
                 <span className="unavailable">unavailable</span>
               ) : (
                 `${blendedBps.toFixed(0)} bp`

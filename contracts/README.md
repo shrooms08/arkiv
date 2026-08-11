@@ -72,6 +72,24 @@ cast send $USDG "transfer(address,uint256)" <minter> 1000000000 \
   --from 0x07c40850D14064D20eB0AfDEf9574675392f2c11 --unlocked
 ```
 
+## Deploying
+
+`script/Deploy.s.sol` targets mainnet and real pools. `script/DeployTestnet.s.sol`
+targets chain **1952** and deploys mocks first, because X Layer testnet has no
+xStocks, no USDG and no pools.
+
+The testnet script does not stop at deploying: it seeds all three sample baskets
+and mints and redeems on each, so what gets verified is a deployment that has
+demonstrably worked rather than one that merely compiled.
+
+Verify with `scripts/verify-testnet.sh`. It uses Sourcify as the baseline —
+no API key, supports chains 196 and 1952 — and additionally tries OKLink when
+`OK_ACCESS_KEY` is set, since OKLink is the explorer people actually click.
+
+> **Vercel footgun.** `vercel deploy` on a *new* project deploys to
+> **production**, not preview, and takes the alias. There is no confirmation. If
+> you want a preview on a fresh project, create the project first.
+
 ## Design notes
 
 Everything load-bearing is documented at its definition. The three things worth

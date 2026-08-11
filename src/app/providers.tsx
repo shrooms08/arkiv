@@ -15,7 +15,8 @@ import { arkivTransport } from "@/lib/chain/client";
  * to the public endpoint's measured limits.
  */
 const config = createConfig({
-  chains: [xLayer, xLayerTestnet],
+  // Testnet first: it is the deployed, clickable demonstration.
+  chains: [xLayerTestnet, xLayer],
   connectors: [injected()],
   transports: {
     [xLayer.id]: arkivTransport(),

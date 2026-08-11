@@ -28,3 +28,5 @@ ol.archive-list { list-style: none; padding: 0; }
 .holding-primary { background: #fafafa; }
 .network-banner { border-bottom: 1px solid var(--line); background: #fffbe6; padding: 0.6rem var(--gap); }
 .network-banner strong { margin-right: 0.35em; }
+.faucet { border: 1px dashed var(--line); padding: 0.6rem 0.75rem; margin: var(--gap) 0; }
+.faucet p { margin: 0.25rem 0; }
