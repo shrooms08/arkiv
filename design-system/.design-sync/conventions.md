@@ -48,18 +48,29 @@ invent new ones — style your own glue with inline `style` using tokens instead
 - containers `--container-prose | --container-content | --container-marketing | --container-max`
 - type `--text-nano | --text-micro | --text-small | --text-body | --text-h4 … --text-h1 | --text-display-m | --text-display-l | --text-display-xl`
 - fonts `--font-sans | --font-mono | --font-display`; weights `--weight-regular | -medium | -semibold | -bold`; `--leading-*`, `--tracking-*`
-- surfaces `--color-canvas | --color-surface | --color-surface-raised | --color-surface-sunken`
-- ink `--color-ink | --color-ink-muted | --color-ink-subtle | --color-ink-inverse`
+- surfaces `--color-canvas | --color-surface` (both bone, the ground) `| --color-surface-raised` (off-white, what lifts) `| --color-surface-sunken`
 - rules `--color-rule | --color-rule-strong`; radii `--radius-xs … --radius-2xl | --radius-full`
-- **structure** (blue, the neutral interactive colour): `--color-structure`, `-hover`, `-active`, `-subtle`, `-border`, `-foreground`
-- **verdict** (gold): `--color-verdict`, `-active`, `-hover`, `-subtle`, `-border`, `-foreground`; plus `--color-breach`, `--color-breach-surface`, `--color-resolved`
+- **ink** — near-black, and the whole interface: `--color-ink`, `-hover`, `-active`, `-muted`, `-subtle`, `-inverse`, plus `--color-ink-wash` for low-alpha tinted fills
+- **verdict** (purple, the only accent): `--color-verdict`, `-hover`, `-active`, `-subtle`, `-border`, `-foreground`; plus `--color-breach`, `--color-breach-surface`, `--color-resolved`
 
-### Gold means "a claim that can be checked"
+There is no `--color-structure`. It was retired when the palette dropped to one
+accent — everything it carried is now `--color-ink`, with `--color-ink-wash` for
+its tints and `--color-rule-strong` for its borders.
 
-`verdict` is the system's one loaded colour. Use it for the falsifier, the breach
-condition, and the primary expression — never as a third emphasis rank above
-`secondary`. A screen with gold scattered across it has lost the distinction the whole
-archive is built on. Blue (`structure`) is the ordinary interactive colour.
+### Purple means "a claim that can be checked"
+
+The palette is three colours doing two jobs. **Near-black is structure**: primary
+buttons, nav, links, borders, focus rings — every interactive and chrome surface.
+Colour is never spent on mere interaction.
+
+**Purple is verdict, and nothing else is purple.** The complete list is four cases:
+the primary expression segment in `AllocationRibbon`, `FalsifierBlock`, breach
+state, and the `RoleLabel` for the thesis expression. `Button`'s `verdict` variant
+is rare by design, never a third emphasis rank above `secondary`.
+
+Purple must stay rare enough that seeing it means something — **if a screen has
+purple in more than three places, one of them is wrong.** When you want emphasis
+and it is not a verdict, reach for weight, size, or `--color-ink`, never the accent.
 
 Related: the metric slot on a `BasketCard` carries the primary expression and the
 falsifier horizon — **never a return figure**. Putting performance where the claim

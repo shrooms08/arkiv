@@ -2,7 +2,7 @@ import { AssetRow, aibottle, scrate } from "@arkiv/design-system";
 
 /**
  * A whole basket as it appears under the ribbon: SCRATE's three legs, IWMx
- * marked as the primary expression with the gold rule, gold chip and gold
+ * marked as the primary expression with the purple rule, purple chip and purple
  * weight. The weight outsizes the ticker on purpose.
  */
 export function BasketStack() {
@@ -51,7 +51,7 @@ export function CoreVersusSatellite() {
 /**
  * The override, isolated. IWMx is `core` on the contract, so unflagged it reads
  * "Liquidity anchor"; flagged as SCRATE's primary expression the same row reads
- * "Thesis expression" and takes the gold rule, chip and weight.
+ * "Thesis expression" and takes the purple rule, chip and weight.
  */
 export function PrimaryExpression() {
   const iwm = scrate.holdings.find((h) => h.symbol === "IWMx")!;

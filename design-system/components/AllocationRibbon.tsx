@@ -3,7 +3,7 @@ export interface RibbonSegment {
   /** Short label rendered inside the segment where it fits. */
   label: string;
   weightBps: number;
-  /** The primary expression. Gold, taller, breaks the band's top edge. */
+  /** The primary expression. Purple, taller, breaks the band's top edge. */
   isPrimary?: boolean;
 }
 
@@ -95,7 +95,7 @@ function Row({
  * a stack of independent bars — a stack invites reading each leg in isolation,
  * which is the opposite of what a basket is. See README, divergence 3.
  *
- * The primary expression segment is gold and taller, breaking the band's top
+ * The primary expression segment is purple and taller, breaking the band's top
  * edge, so the thesis's sharpest statement is findable without reading a label.
  *
  * Passing `compareSegments` stacks a second, aligned row. Drift between

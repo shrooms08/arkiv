@@ -121,26 +121,26 @@
 }
 
 .ark-btn--primary {
-  --btn-bg: var(--color-structure);
-  --btn-fg: var(--color-structure-foreground);
-  --btn-border: var(--color-structure);
+  --btn-bg: var(--color-ink);
+  --btn-fg: var(--color-ink-inverse);
+  --btn-border: var(--color-ink);
 }
 .ark-btn--primary:hover:not(:disabled) {
-  --btn-bg: var(--color-structure-hover);
-  --btn-border: var(--color-structure-hover);
+  --btn-bg: var(--color-ink-hover);
+  --btn-border: var(--color-ink-hover);
 }
 .ark-btn--primary:active:not(:disabled) {
-  --btn-bg: var(--color-structure-active);
+  --btn-bg: var(--color-ink-active);
 }
 
 .ark-btn--secondary {
   --btn-bg: transparent;
-  --btn-fg: var(--color-structure);
-  --btn-border: var(--color-structure-border);
+  --btn-fg: var(--color-ink);
+  --btn-border: var(--color-rule-strong);
 }
 .ark-btn--secondary:hover:not(:disabled) {
-  --btn-bg: var(--color-structure-subtle);
-  --btn-border: var(--color-structure);
+  --btn-bg: var(--color-ink-wash);
+  --btn-border: var(--color-ink);
 }
 
 .ark-btn--ghost {
@@ -222,7 +222,7 @@
   outline: var(--focus-ring-width) solid var(--color-ring);
   outline-offset: var(--focus-ring-offset);
 }
-/* A card carrying a verdict gets a gold left edge, not a gold fill. */
+/* A card carrying a verdict gets a purple left edge, not a purple fill. */
 .ark-card--verdict {
   border-inline-start: var(--border-width-emphasis) solid var(--color-verdict);
 }
@@ -269,13 +269,13 @@
   border-color: var(--color-rule);
 }
 .ark-badge--structure {
-  background: var(--color-structure-subtle);
-  color: var(--color-structure);
-  border-color: var(--color-structure-border);
+  background: var(--color-ink-wash);
+  color: var(--color-ink);
+  border-color: var(--color-rule-strong);
 }
 .ark-badge--verdict {
   background: var(--color-verdict-subtle);
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
   border-color: var(--color-verdict-border);
 }
 .ark-badge--outline {
@@ -317,7 +317,7 @@
   white-space: nowrap;
 }
 .ark-role--expression {
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
 }
 .ark-role__dot {
   width: var(--space-2);
@@ -345,7 +345,7 @@
 .ark-weight--sm { font-size: var(--text-display-l); }   /* 56px */
 .ark-weight--md { font-size: var(--text-display-xl); }  /* 88px */
 .ark-weight--lg { font-size: calc(var(--text-display-xl) * 1.3636); } /* 120px */
-.ark-weight--verdict { color: var(--color-verdict-active); }
+.ark-weight--verdict { color: var(--color-verdict); }
 .ark-weight__unit {
   font-size: 0.4em;
   font-weight: var(--weight-medium);
@@ -384,8 +384,8 @@
   align-items: center;
   justify-content: flex-start;
   padding-inline: var(--space-2);
-  background: var(--color-structure);
-  color: var(--color-structure-foreground);
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
   border-inline-end: var(--border-width) solid var(--color-surface);
   overflow: hidden;
   cursor: default;
@@ -403,10 +403,10 @@
   border-start-end-radius: var(--radius-sm);
   border-end-end-radius: var(--radius-sm);
 }
-/* Alternating tint keeps adjacent blue segments legible without introducing a
+/* Alternating tint keeps adjacent ink segments legible without introducing a
    second hue — structure stays one colour. */
 .ark-ribbon__seg:nth-child(even) {
-  background: var(--color-structure-hover);
+  background: var(--color-ink-hover);
 }
 .ark-ribbon__seg--primary {
   height: var(--ribbon-height-primary);
@@ -481,8 +481,8 @@
   width: var(--icon-md);
   height: var(--icon-md);
   border-radius: var(--radius-full);
-  background: var(--color-structure-subtle);
-  color: var(--color-structure);
+  background: var(--color-ink-wash);
+  color: var(--color-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -494,7 +494,7 @@
 }
 .ark-assetrow__icon--verdict {
   background: var(--color-verdict-subtle);
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
 }
 
 .ark-assetrow__ident {
@@ -542,7 +542,7 @@
   flex: none;
 }
 .ark-assetrow__addr:hover {
-  color: var(--color-structure);
+  color: var(--color-ink);
 }
 .ark-assetrow__addr:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-ring);
@@ -562,7 +562,7 @@
   color: var(--color-ink);
 }
 .ark-assetrow__weight--verdict {
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
 }
 
 /* ===================================================================
@@ -598,7 +598,7 @@
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
 }
 .ark-falsifier--resolved .ark-falsifier__title {
   color: var(--color-ink-subtle);
@@ -757,8 +757,8 @@
   margin-inline-start: 0;
 }
 .ark-basketcard__chip--overflow {
-  background: var(--color-structure-subtle);
-  color: var(--color-structure);
+  background: var(--color-ink-wash);
+  color: var(--color-ink);
 }
 
 /* The metric slot carries the primary expression and the falsifier horizon.
@@ -790,7 +790,7 @@
   text-overflow: ellipsis;
 }
 .ark-basketcard__metric-value--verdict {
-  color: var(--color-verdict-active);
+  color: var(--color-verdict);
 }
 
 /* ===================================================================
@@ -848,8 +848,8 @@
   outline-offset: var(--focus-ring-offset);
 }
 .ark-nav__link[aria-current="page"] {
-  color: var(--color-structure);
-  background: var(--color-structure-subtle);
+  color: var(--color-ink);
+  background: var(--color-ink-wash);
 }
 .ark-nav__actions {
   display: flex;
@@ -885,7 +885,7 @@
   transition: color var(--transition-base);
 }
 .ark-accordion__trigger:hover {
-  color: var(--color-structure);
+  color: var(--color-ink);
 }
 .ark-accordion__trigger:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-ring);
@@ -979,8 +979,8 @@
 .ark-input:focus,
 .ark-textarea:focus {
   outline: none;
-  border-color: var(--color-structure);
-  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-structure-subtle);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-ink-wash);
 }
 .ark-input:disabled,
 .ark-textarea:disabled {
@@ -1004,9 +1004,9 @@
   resize: vertical;
 }
 .ark-textarea--thesis:focus {
-  border-color: var(--color-structure);
+  border-color: var(--color-ink);
   box-shadow:
-    0 0 0 var(--space-1) var(--color-structure-subtle),
+    0 0 0 var(--space-1) var(--color-ink-wash),
     var(--elevation-overlay);
   background: var(--color-surface);
 }
@@ -1049,7 +1049,7 @@
   transition: color var(--transition-base);
 }
 .ark-footer__link:hover {
-  color: var(--color-structure);
+  color: var(--color-ink);
 }
 .ark-footer__link:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-ring);

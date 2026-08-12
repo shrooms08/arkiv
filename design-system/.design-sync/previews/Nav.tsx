@@ -1,6 +1,6 @@
 import { Nav } from "@arkiv/design-system";
 
-/** The archive page: structure blue marks the current link and nothing else. */
+/** The archive page: ink marks the current link and nothing else. */
 export function Primary() {
   return (
     <div className="ark">

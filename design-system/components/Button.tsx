@@ -16,8 +16,8 @@ export interface ButtonProps
 /**
  * The one interactive primitive.
  *
- * `verdict` exists but is deliberately rare: gold means a claim that can be
- * checked, so a gold button is only correct when the action is about the
+ * `verdict` exists but is deliberately rare: purple means a claim that can be
+ * checked, so a purple button is only correct when the action is about the
  * falsifier. It is not a third visual rank for "more important than secondary".
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

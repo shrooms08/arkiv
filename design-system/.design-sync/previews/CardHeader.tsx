@@ -98,7 +98,7 @@ export function LongTitleWraps() {
  */
 export function WeightInHeader() {
   const t = stickyinf;
-  const gold = t.holdings[0];
+  const primary = t.holdings[0];
   return (
     <div className="ark" style={{ maxWidth: "34rem" }}>
       <Card as="article" verdict>
@@ -106,10 +106,10 @@ export function WeightInHeader() {
           <div>
             <div style={label}>Thesis expression</div>
             <h3 style={{ margin: "var(--space-1) 0 0", fontSize: "var(--text-h4)" }}>
-              {gold.symbol} — {gold.label}
+              {primary.symbol} — {primary.label}
             </h3>
           </div>
-          <WeightNumeral weightBps={gold.weightBps} size="md" verdict />
+          <WeightNumeral weightBps={primary.weightBps} size="md" verdict />
         </CardHeader>
         <CardBody>
           <p
@@ -119,7 +119,7 @@ export function WeightInHeader() {
               color: "var(--color-ink-muted)",
             }}
           >
-            {gold.rationale}
+            {primary.rationale}
           </p>
         </CardBody>
         <CardFooter>
@@ -130,7 +130,7 @@ export function WeightInHeader() {
               color: "var(--color-ink-muted)",
             }}
           >
-            {gold.wrapper}
+            {primary.wrapper}
           </span>
         </CardFooter>
       </Card>

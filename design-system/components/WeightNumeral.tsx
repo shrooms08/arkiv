@@ -6,7 +6,7 @@ export interface WeightNumeralProps extends React.HTMLAttributes<HTMLSpanElement
   /** Weight in basis points, as stored on chain. 5000 -> 50%. */
   weightBps?: number;
   size?: WeightSize;
-  /** Gold. Set for the primary expression holding. */
+  /** Purple. Set for the primary expression holding. */
   verdict?: boolean;
   /** Decimal places. 0 gives "50", 1 gives "50.0". */
   precision?: number;

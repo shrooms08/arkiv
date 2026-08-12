@@ -27,10 +27,10 @@ export interface FalsifierBlockProps {
  * Three labelled parts, each visually distinct: the claim is the assertion
  * (medium weight, plain surface), the observable is the instrument (mono, on a
  * sunken surface, because it is a measurement procedure), the breach is the
- * trigger (gold surface, gold text). The serial sits in the header and the
+ * trigger (purple surface, purple text). The serial sits in the header and the
  * horizon runs as a thin ruled track, not a progress bar with a fill gradient.
  *
- * A resolved block drops the gold entirely and reads as archived — the point
+ * A resolved block drops the purple entirely and reads as archived — the point
  * of a horizon is that it ends, and a clause that has expired should not keep
  * claiming attention.
  */

@@ -129,28 +129,33 @@ export const density = {
 
 /** Raw brand values in OKLCH, converted from the stated hex. */
 export const palette = {
-  blue500: { oklch: "oklch(0.4376 0.2028 265.92)", hex: "#1D3FBF" },
-  blue600: { oklch: "oklch(0.3776 0.2028 265.92)", hex: null },
-  blue700: { oklch: "oklch(0.3176 0.2028 265.92)", hex: null },
-  gold500: { oklch: "oklch(0.8058 0.1241 81.41)", hex: "#E8B75A" },
-  gold600: { oklch: "oklch(0.7458 0.1241 81.41)", hex: null },
-  gold700: { oklch: "oklch(0.6858 0.1241 81.41)", hex: null },
+  purple500: { oklch: "oklch(0.5400 0.2404 288.29)", hex: "#7141EE" },
+  purple600: { oklch: "oklch(0.4800 0.2100 288.29)", hex: "#6038CA" },
+  purple700: { oklch: "oklch(0.4200 0.1800 288.29)", hex: "#4F2FA7" },
   nearBlack: { oklch: "oklch(0.1998 0.0086 264.36)", hex: "#14161A" },
+  nearBlackLifted: { oklch: "oklch(0.2800 0.0086 264.36)", hex: "#27292D" },
+  nearBlackDeep: { oklch: "oklch(0.1400 0.0086 264.36)", hex: "#07090D" },
   bone: { oklch: "oklch(0.9457 0.0096 93.57)", hex: "#EFEDE6" },
   offWhite: { oklch: "oklch(0.9668 0.0054 95.10)", hex: "#F5F4F0" },
 } as const;
 
 /**
  * Semantic tokens. Components reference these names, never `palette`.
- * One colour, one meaning: structure is always blue, verdict is always gold.
+ *
+ * One colour, one meaning. Three colours, two jobs: **ink is structure**
+ * (actions, links, chrome, borders — anything that is interface) and
+ * **purple is verdict** (primary expression, falsifier, breach, thesis
+ * expression — and nothing else). There is no third accent to reach for,
+ * so purple stays rare enough that seeing it means something.
  */
 export const semantic = [
-  "color-structure",
-  "color-structure-hover",
-  "color-structure-active",
-  "color-structure-foreground",
-  "color-structure-subtle",
-  "color-structure-border",
+  "color-ink",
+  "color-ink-hover",
+  "color-ink-active",
+  "color-ink-muted",
+  "color-ink-subtle",
+  "color-ink-inverse",
+  "color-ink-wash",
   "color-verdict",
   "color-verdict-hover",
   "color-verdict-active",
@@ -161,10 +166,6 @@ export const semantic = [
   "color-surface",
   "color-surface-raised",
   "color-surface-sunken",
-  "color-ink",
-  "color-ink-muted",
-  "color-ink-subtle",
-  "color-ink-inverse",
   "color-rule",
   "color-rule-strong",
   "color-field",

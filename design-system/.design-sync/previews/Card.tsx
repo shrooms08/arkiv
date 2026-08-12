@@ -16,7 +16,7 @@ import {
 
 /**
  * The three surfaces, as CardDemo states them: default, sunken, verdict.
- * The gold edge is reserved for a card carrying a verdict, so it is the
+ * The purple edge is reserved for a card carrying a verdict, so it is the
  * falsifier card that gets it.
  */
 export function Surfaces() {

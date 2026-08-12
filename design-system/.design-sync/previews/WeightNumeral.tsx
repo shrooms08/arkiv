@@ -18,7 +18,7 @@ export function Sizes() {
   );
 }
 
-/** Gold marks the primary expression holding. */
+/** Purple marks the primary expression holding. */
 export function Verdict() {
   return (
     <div className="ark" style={baseline}>

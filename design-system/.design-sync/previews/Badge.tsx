@@ -21,7 +21,7 @@ export function Tones() {
 
 /**
  * Structure carries chrome and status — network, confidence, basket state.
- * Nothing here is a claim, so nothing here is gold.
+ * Nothing here is a claim, so nothing here is purple.
  */
 export function StatusMarkers() {
   return (
@@ -42,7 +42,7 @@ export function StatusMarkers() {
   );
 }
 
-/** Verdict gold is rare on purpose: it only appears where a checkable claim is at stake. */
+/** Verdict purple is rare on purpose: it only appears where a checkable claim is at stake. */
 export function VerdictIsRare() {
   return (
     <div className="ark" style={{ ...row, flexDirection: "column", alignItems: "flex-start" }}>

@@ -7,7 +7,7 @@ const row: React.CSSProperties = {
   alignItems: "center",
 };
 
-/** The four variants. `verdict` is gold and deliberately rare — falsifier actions only. */
+/** The four variants. `verdict` is purple and deliberately rare — falsifier actions only. */
 export function Variants() {
   return (
     <div className="ark" style={row}>

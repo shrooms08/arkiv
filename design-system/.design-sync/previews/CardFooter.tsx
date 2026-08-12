@@ -106,7 +106,7 @@ export function Actions() {
   );
 }
 
-/** A verdict card whose footer carries the resolution — gold edge, gold marker. */
+/** A verdict card whose footer carries the resolution — purple edge, purple marker. */
 export function VerdictResolution() {
   const t = stickyinf;
   return (

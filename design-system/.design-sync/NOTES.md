@@ -113,11 +113,21 @@ override, so the fix is a targeted `preview-rebuild.mjs --components …` and no
   on one line and rows are single-height again. **This is a real source change made
   during a sync** — if `arkiv.css` is ever regenerated or reverted from another branch,
   check this rule survived.
-- **Gold is described as rare, but two paths spend it freely.** A plain `satellite`
-  holding renders its role label in `--color-verdict-active` without being the primary
-  expression, so a multi-satellite basket shows several gold labels; and `BadgeDemo`
-  tags `Primary expression` as `verdict` though a holding is not a checkable claim.
-  Both preserved as-authored in the previews rather than silently corrected.
+- ~~Gold is described as rare, but two paths spend it freely.~~ **FIXED 2026-08-12
+  in the black/bone/purple repalette.** `RoleLabel` gave the accent to every
+  `satellite`, so a six-holding basket showed five accented labels; it is now
+  `isPrimaryExpression` only. `BadgeDemo` tagged `Primary expression` as `verdict`
+  though a holding is not a checkable claim; it is now `structure`. Verified from
+  computed colour: accented role labels went 3/6 → 2/6 and verdict badges 2 → 1.
+- **A third accent leak is still open, and it is a design decision, not a bug.**
+  Form validation errors use `--color-breach` — `.ark-field__hint--error` and the
+  `[aria-invalid="true"]` border on `Input`/`Textarea`. Under the one-accent palette
+  that paints form errors in verdict purple, which is not one of the four verdict
+  cases. It was equally off-rule when the accent was gold; the repalette only made
+  it conspicuous. The palette has no error colour, so the options are: paint errors
+  in `--color-ink` and let the border plus the message carry it; accept errors as a
+  fifth verdict case; or add a dedicated danger colour and stop being a three-colour
+  system. Left as-is pending the DS owner's call.
 - **`Input` has no read-only treatment.** `readOnly` passes through to the `<input>`
   and renders at full ink, identical to an editable filled field; only `disabled` gets
   the 0.5-opacity treatment. There is currently no way to show an inert chain-derived
@@ -129,10 +139,13 @@ override, so the fix is a targeted `preview-rebuild.mjs --components …` and no
 - **`SerialNumber`'s `emphasis` is a single ink step** (`--color-ink-subtle` →
   `--color-ink-muted`) and is indistinguishable in isolation. If it is meant to mark
   "the record you are reading", the delta is probably too small to carry that alone.
-- **`RoleLabel` renders `satellite` and `core + isPrimaryExpression` identically.**
-  Correct per the source, but it makes a naive variant grid look like a duplicate.
+- ~~`RoleLabel` renders `satellite` and `core + isPrimaryExpression` identically.~~
+  **Resolved 2026-08-12 as a side effect of the accent fix above.** A plain
+  `satellite` and the primary expression still share the words "Thesis expression",
+  but only the primary expression now carries purple, so the two are visually
+  distinct. The `EveryRole` preview's mono props caption is still worth keeping.
 
-- `FalsifierBlock`'s JSDoc says a resolved block "drops the gold entirely", but
+- `FalsifierBlock`'s JSDoc says a resolved block "drops the purple entirely", but
   `.ark-falsifier--resolved` in `components/arkiv.css` only neutralises the border,
   card background, header background and title colour plus the horizon fill. The
   **breach-condition panel keeps its gold surface and gold text** in the resolved

@@ -37,7 +37,11 @@ export function RoleLabel({
   // The primary expression is a thesis expression regardless of its liquidity
   // role — a deep-pool index can still be the sharpest statement of the bet.
   const text = isPrimaryExpression ? ROLE_TEXT.satellite : ROLE_TEXT[role];
-  const emphasise = isPrimaryExpression || role === "satellite";
+  // Only the primary expression carries the accent. Every satellite used to,
+  // which meant a six-holding basket showed five purple labels and the colour
+  // stopped meaning anything. Purple marks the one holding the thesis is
+  // actually expressed through; the rest are described by their words.
+  const emphasise = isPrimaryExpression;
 
   return (
     <span

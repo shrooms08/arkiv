@@ -267,7 +267,7 @@ number in the row, so it is the largest thing in the row.
 A portfolio is one object. A stack of independent bars invites reading each leg
 on its own, which is the opposite of what a basket is. `AllocationRibbon` is a
 single continuous band segmented by weight, with the primary expression rendered
-gold and 12px taller so it breaks the band's top edge and is findable without
+purple and 12px taller so it breaks the band's top edge and is findable without
 reading a label. Passing `compareSegments` stacks a second aligned row, so drift
 between declared and current is a **shape difference** — legible without
 subtracting two numbers.
@@ -283,27 +283,76 @@ citation, not a headline.
 
 ## Colour
 
-Semantic tokens over raw values, so components reference meaning:
+Three colours, two jobs. Semantic tokens over raw values, so components
+reference meaning:
 
 ```
---color-structure   blue #1D3FBF   oklch(0.4376 0.2028 265.92)
---color-verdict     gold #E8B75A   oklch(0.8058 0.1241 81.41)
---color-ink         near-black #14161A
---color-surface / --color-canvas   off-white #F5F4F0, bone #EFEDE6
---color-rule        near-black at 14% alpha
+--color-ink             near-black  #14161A  oklch(0.1998 0.0086 264.36)
+--color-surface         bone        #EFEDE6  oklch(0.9457 0.0096 93.57)
+--color-surface-raised  off-white   #F5F4F0  oklch(0.9668 0.0054 95.10)
+--color-verdict         purple      #7141EE  oklch(0.5400 0.2404 288.29)
+--color-rule            near-black at 14% alpha
 ```
 
 Every OKLCH value was converted from the stated hex, not eyeballed.
 
-One colour, one meaning, enforced by naming: **structure is blue** — primary
-actions, links, nav chrome, focus rings. **Verdict is gold** — the primary
-expression segment and row, the falsifier block, breach states. There is no
-gold "accent" usage and no blue "success" usage. `Button` has a `verdict`
-variant, and it is documented as rare rather than as a third rank.
+### The rule
 
-Dark mode lifts blue to `oklch(0.62 0.178 265.92)`, holding hue and chroma. At
-L=0.4376 the brand blue does not read on near-black; keeping the hue keeps it
-the same colour.
+**Structure is near-black.** Primary buttons, nav, links, borders, focus rings,
+chrome — anything that is interface rather than meaning.
+
+**Purple is verdict, and nothing else is purple.** The complete list is four
+cases: the primary expression segment in `AllocationRibbon`, `FalsifierBlock`,
+breach state, and the `RoleLabel` for the thesis expression. `Button` has a
+`verdict` variant and it is documented as rare rather than as a third rank.
+
+Purple should appear rarely enough that seeing it means something. **If a screen
+has purple in more than three places, one of them is wrong.**
+
+### Why structure moved to ink
+
+The palette previously spent two colours: blue for structure, gold for verdict.
+That works, but it costs the accent its force — when interaction is already
+coloured, a second colour has to shout to be heard as different, and the reader
+learns to skim past both. Dropping to one accent means the interface can be
+achromatic, and the only chromatic thing on the page is the claim. Near-black is
+not a downgrade for structure; a primary button does not need colour to be found,
+because position, weight and contrast already do that work. Colour is the scarcest
+signal in the system, so it is spent on the one thing the archive exists for.
+
+`--color-structure` is retired. Everything it carried moved to `--color-ink`,
+with `--color-ink-wash` for the low-alpha tints (badge grounds, secondary-button
+hover, focus glows) and `--color-rule-strong` for the borders it used to own.
+
+### Contrast
+
+Measured against bone `#EFEDE6`, the ground:
+
+| Pair | Ratio | |
+|---|---|---|
+| near-black on bone | 15.46:1 | AAA |
+| purple on bone | 4.85:1 | AA text |
+| purple-600 on bone | 6.15:1 | AA text |
+| purple-700 on bone | 7.80:1 | AAA |
+| off-white on purple | 5.17:1 | AA text — usable as a button fill |
+| purple on near-black | 3.19:1 | AA non-text — the ribbon edge |
+
+Purple sits at 3.19:1 against near-black, clearing the 3:1 non-text threshold.
+That second number is why the ramp leads with `purple-500` at L=0.54 rather than
+a deeper value: with near-black now carrying the whole interface, the accent has
+to read as *purple* beside it, not merely as *dark*. The lightness was chosen as
+the point that clears 4.5:1 on bone **and** 3:1 on near-black — below L≈0.53 the
+ribbon edge fails against its neighbours, above L≈0.55 the text use fails against
+the ground. A deeper aubergine (`#4C2A85`) measures better on bone at 9.07:1 and
+much worse where it counts, at 1.71:1 against near-black.
+
+Dark mode lifts purple to `oklch(0.72 0.1545 288.29)`, holding hue. At L=0.54
+it does not read on near-black; keeping the hue keeps it the same colour. Chroma
+is capped at the sRGB gamut boundary for the lifted lightness.
+
+Bone is the ground and off-white is what genuinely lifts off it, so a resting
+card sits flush and is described by its rule. Depth is earned — `--color-surface-raised`
+is reserved for hover and for elements that actually float.
 
 No reference brand colour, logo, wordmark, illustration, icon or copy is
 reproduced anywhere in this package.
@@ -337,5 +386,8 @@ Values I could not measure, recorded rather than invented:
   1440×1200: **15/15 demos rendered, zero page errors, zero console errors.**
 - Post-render assertions: card 389×400 with 12px radius, 1px border and
   `box-shadow: none`; ribbon primary segment 56px against 44px for plain
-  segments; primary segment `oklch(0.8058 0.1241 81.41)` (verdict gold) against
-  `oklch(0.3776 0.2028 265.92)` (structure blue); asset row 58px.
+  segments; primary segment `oklch(0.5400 0.2404 288.29)` (verdict purple)
+  against near-black plain segments; asset row 58px.
+- Palette audit: zero `#1D3FBF`/`#E8B75A` and zero hue-265.92/81.41 values
+  anywhere in tokens, components or the stylesheet; zero colour literals in
+  components; every rendered accent resolves to the purple ramp.

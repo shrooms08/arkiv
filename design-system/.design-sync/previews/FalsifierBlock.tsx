@@ -4,7 +4,7 @@ const frame: React.CSSProperties = {
   maxWidth: "var(--container-prose)",
 };
 
-/** Open clause: gold breach panel, horizon track part-elapsed. */
+/** Open clause: purple breach panel, horizon track part-elapsed. */
 export function Open() {
   return (
     <div className="ark" style={frame}>
@@ -21,7 +21,7 @@ export function Open() {
   );
 }
 
-/** Resolved and breached: the gold drops out entirely and the block reads as archived. */
+/** Resolved and breached: the accent drops back and the block reads as archived. */
 export function ResolvedBreached() {
   return (
     <div className="ark" style={frame}>

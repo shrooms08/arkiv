@@ -7,7 +7,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   sunken?: boolean;
   /** Hover and focus affordances. Pair with a real interactive element. */
   interactive?: boolean;
-  /** Gold leading edge. Reserved for cards carrying a verdict. */
+  /** Purple leading edge. Reserved for cards carrying a verdict. */
   verdict?: boolean;
   as?: "div" | "article" | "section" | "li";
   children?: React.ReactNode;

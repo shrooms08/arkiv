@@ -8,7 +8,7 @@ import {
 
 /**
  * One thesis, one band. SCRATE's three legs, with IWMx — the primary
- * expression — gold and breaking the band's top edge.
+ * expression — purple and breaking the band's top edge.
  */
 export function DeclaredBand() {
   return (
@@ -23,7 +23,7 @@ export function DeclaredBand() {
 
 /**
  * Declared over current. Drift is a shape difference between two aligned rows,
- * so it reads without arithmetic — the gold IWMx segment has widened.
+ * so it reads without arithmetic — the purple IWMx segment has widened.
  */
 export function DeclaredVsCurrent() {
   return (

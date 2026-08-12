@@ -18,8 +18,8 @@ export interface NavProps {
 }
 
 /**
- * Top chrome. Structure blue marks the current page and nothing else —
- * navigation is structure, so it never uses verdict gold.
+ * Top chrome. Ink marks the current page and nothing else — navigation is
+ * structure, so it never uses verdict purple.
  */
 export function Nav({
   brand = "Arkiv",

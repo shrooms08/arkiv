@@ -53,7 +53,7 @@ export function AllClosed() {
             id: "breach",
             question: "What happens when a falsifier is breached?",
             answer:
-              "The breach is recorded against the basket's serial and the card drops its gold. Nothing is liquidated — the point of the record is that it survives being wrong.",
+              "The breach is recorded against the basket's serial and the card drops its accent. Nothing is liquidated — the point of the record is that it survives being wrong.",
           },
           {
             id: "fees",

@@ -11,8 +11,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
  * Small uppercase marker. Measured reference size is 10px/600 with 0.05em
  * tracking, which is what the `--text-nano` token carries.
  *
- * Tone follows the one-colour-one-meaning rule: `structure` for chrome and
- * status, `verdict` only where the badge is about a claim.
+ * Tone follows the one-colour-one-meaning rule: `structure` is ink and carries
+ * chrome and status, `verdict` is purple and is only correct where the badge is
+ * about a claim that can be checked — in practice, a breach.
  */
 export function Badge({
   tone = "neutral",
@@ -32,7 +33,8 @@ export function BadgeDemo() {
     <div className="ark" style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
       <Badge tone="neutral">Testnet</Badge>
       <Badge tone="structure">Confidence: high</Badge>
-      <Badge tone="verdict">Primary expression</Badge>
+      {/* A holding is not a claim, so naming one is structure, not verdict. */}
+      <Badge tone="structure">Primary expression</Badge>
       <Badge tone="outline">12M horizon</Badge>
       <Badge tone="verdict">Breached</Badge>
     </div>
