@@ -15,9 +15,9 @@ import { useChainGuard } from "@/lib/chain/guard";
 import { withSlippage } from "@/lib/chain/quoter";
 import { SwitchNetwork } from "./SwitchNetwork";
 import { Faucet } from "./Faucet";
+import { RedeemAction } from "./RedeemAction";
 
 type Step = "idle" | "approving" | "minting" | "done" | "error";
-type ExitStep = "idle" | "redeeming" | "error";
 
 const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 
@@ -69,8 +69,6 @@ export function InvestPanel({
   const [slippageBps, setSlippageBps] = useState(100);
   const [step, setStep] = useState<Step>("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [exitStep, setExitStep] = useState<ExitStep>("idle");
-  const [exitMessage, setExitMessage] = useState<string | null>(null);
 
   // Fee read live from the registry, never assumed. It is owner-settable inside
   // a hard cap, so a hardcoded 30 bps would eventually size the split wrongly
@@ -208,30 +206,6 @@ export function InvestPanel({
     }
   }
 
-  /**
-   * Exit. Deliberately gated on nothing but holding shares: not on the network,
-   * not on the fee, not on breach, not on any state this panel introduces. R10.
-   */
-  async function redeem() {
-    if (!address || shareBalance === 0n || !guard.ok) return;
-    setExitMessage(null);
-    setExitStep("redeeming");
-    try {
-      const hash = await writeContractAsync({
-        address: basket,
-        abi: basketAbi,
-        functionName: "redeem",
-        args: [shareBalance, address, tokens.map(() => 0n)],
-      });
-      await waitForTransactionReceipt(config, { hash });
-      setExitStep("idle");
-      onDone?.();
-    } catch (err) {
-      setExitStep("error");
-      setExitMessage(explainRevert(err));
-    }
-  }
-
   const money = (v: bigint) => Number(formatUnits(v, USDG.decimals)).toFixed(2);
   const shares = (v: bigint) => Number(formatUnits(v, 18)).toFixed(4);
 
@@ -364,24 +338,17 @@ export function InvestPanel({
             {shares(shareBalance)} {symbol}
           </span>
         </div>
-        <Button
+        <RedeemAction
           className="invest__redeem"
-          variant="secondary"
-          disabled={!address || shareBalance === 0n || exitStep === "redeeming" || !guard.ok}
-          loading={exitStep === "redeeming"}
-          onClick={redeem}
-        >
-          {exitStep === "redeeming" ? "Redeeming…" : "Redeem all, in kind"}
-        </Button>
+          basket={basket}
+          shares={shareBalance}
+          legCount={tokens.length}
+          onDone={onDone}
+        />
         <p className="app-note">
           Redemption pays your pro-rata slice of every leg in kind. It touches no pool and
           can never be paused.
         </p>
-        {exitStep === "error" && (
-          <div className="app-error" role="alert">
-            <p style={{ margin: 0 }}>{exitMessage}</p>
-          </div>
-        )}
       </div>
     </aside>
   );

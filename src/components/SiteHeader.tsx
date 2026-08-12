@@ -11,6 +11,7 @@ import { WalletBar } from "./WalletBar";
 const LINKS = [
   { href: "/app", label: "Write" },
   { href: "/app/archive", label: "Archive" },
+  { href: "/app/positions", label: "Positions" },
 ];
 
 /**
