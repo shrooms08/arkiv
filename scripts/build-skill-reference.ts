@@ -214,6 +214,13 @@ function main() {
   console.log("skill reference generated");
 }
 
-main();
+/**
+ * Only when run directly. The drift test imports `allowlistDoc` and
+ * `examplesDoc` to compare against the committed files, and a bare `main()`
+ * here would regenerate them on import, so the comparison would rewrite what it
+ * was about to check and could never fail. It could not, until this guard.
+ */
+const invokedDirectly = process.argv[1]?.includes("build-skill-reference");
+if (invokedDirectly) main();
 
 export { allowlistDoc, examplesDoc };
