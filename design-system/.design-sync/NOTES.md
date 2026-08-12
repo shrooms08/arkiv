@@ -84,6 +84,29 @@ must be ≥1. If it is 0, the token layer did not ship.
 - **`Textarea showCount` requires `maxLength`** or the counter silently renders
   nothing. **`Input`'s `error` replaces the `hint` slot** rather than stacking.
 
+## The anchor's blind spot — read this before any re-sync after a styling change
+
+**The verification diff is driven by per-component *source* hashes, not by appearance.**
+Component render hashes cover the preview `.tsx` and preview-affecting config; the
+stylesheet lives in `styleSha`. So a change that repaints the entire system — a
+palette swap, a token rename, a global CSS edit — leaves most components marked
+`unchanged` and they skip verification entirely, even though every one of them now
+*looks* different.
+
+This bit on the 2026-08-12 repalette sync: 7 of 18 components came back `unchanged`
+purely because their preview files had not been edited, and `RoleLabel` was among
+them — despite its accent logic having changed in that very commit. Its carried-forward
+grade still asserted that two of its variants render identically, which was no longer
+true.
+
+**The rule: after any global styling change, force-verify the skipped set.**
+```sh
+node .ds-sync/package-capture.mjs --out ./ds-bundle \
+  --components <the unchanged list> --spot-check-components <the same list>
+```
+Then Read every fresh sheet and re-grade. Carried-forward grades are trustworthy for
+source-scoped changes; they are not trustworthy when the paint changed underneath them.
+
 ## Card presentation — and the review sheet's blind spot
 
 `cfg.overrides` carries `cardMode: "column"` for **BasketCard, Card, CardHeader, Nav
@@ -119,6 +142,27 @@ override, so the fix is a targeted `preview-rebuild.mjs --components …` and no
   `isPrimaryExpression` only. `BadgeDemo` tagged `Primary expression` as `verdict`
   though a holding is not a checkable claim; it is now `structure`. Verified from
   computed colour: accented role labels went 3/6 → 2/6 and verdict badges 2 → 1.
+- ~~`AllocationRibbon` drops the accent from the primary expression in even positions.~~
+  **FIXED 2026-08-12 in `components/arkiv.css`.** `.ark-ribbon__seg:nth-child(even)`
+  (specificity 0,2,0) outranked `.ark-ribbon__seg--primary` (0,1,0), so the alternating
+  ink tint repainted the accent whenever the primary expression landed in an even
+  position — the segment kept its 56px height and top-edge break but lost its colour.
+  It failed for roughly half of all baskets and was equally broken under the old gold
+  palette, so it long predates the repalette; it was simply never noticed because no
+  preview happened to exercise an even-position primary until `BasketCard/ArchiveGrid`
+  (AIBOTTLE, NVDAx at position 2). Fixed by scoping the tint with
+  `:not(.ark-ribbon__seg--primary)` rather than escalating specificity — the tint
+  exists to separate adjacent *ink* segments and the primary is never one. Verified by
+  rendering a primary segment at both parities: both now resolve `#7141EE`.
+  **Watch for the general shape of this bug:** any `:nth-child`/`:hover` rule in this
+  stylesheet outranks a plain modifier class, so a state modifier can be silently
+  overridden without any build or render check failing.
+- **The Badge preview and `BadgeDemo` are separate files and drift apart.** The
+  accent-leak fix in `components/Badge.tsx` did not touch
+  `.design-sync/previews/Badge.tsx`, which independently tagged "Primary expression"
+  as `verdict` and rendered a cell named `VerdictIsRare` containing four purple badges.
+  Fixed in the same sync. When a component's demo is corrected, check its preview too —
+  the preview is what ships as the card and what the design agent learns from.
 - **A third accent leak is still open, and it is a design decision, not a bug.**
   Form validation errors use `--color-breach` — `.ark-field__hint--error` and the
   `[aria-invalid="true"]` border on `Input`/`Textarea`. Under the one-accent palette
@@ -139,6 +183,21 @@ override, so the fix is a targeted `preview-rebuild.mjs --components …` and no
 - **`SerialNumber`'s `emphasis` is a single ink step** (`--color-ink-subtle` →
   `--color-ink-muted`) and is indistinguishable in isolation. If it is meant to mark
   "the record you are reading", the delta is probably too small to carry that alone.
+- **The stated "four verdict cases" is narrower than what the stylesheet implements.**
+  The rule names the `AllocationRibbon` primary segment, `FalsifierBlock`, breach state
+  and the thesis-expression `RoleLabel`. But three more component-level modifiers also
+  paint the accent, all marking the primary expression: `.ark-weight--verdict` (the
+  `WeightNumeral verdict` prop), `.ark-assetrow__weight--verdict`, and
+  `.ark-basketcard__metric-value--verdict`. These are the DS's own CSS, not preview
+  authoring choices. In `CardHeader/WeightInHeader` the effect is inverted relative to
+  the rule — the large numeral is purple while the sanctioned `RoleLabel` beside it is
+  muted ink. Either the rule should read "the primary expression, wherever it is marked"
+  or these modifiers should drop to ink. Needs the DS owner's call; not changed.
+- **Footer chrome is deliberately soft, not drifted.** `.ark-footer` fills with
+  `--color-surface-sunken` and its links use `--color-ink-muted` (~#5B5E63) — both real
+  tokens, no literals. It reads softer than the conventions header's "chrome is
+  near-black" phrasing implies, at ~5.7:1. Flagged so a future reader does not mistake
+  it for a leak.
 - ~~`RoleLabel` renders `satellite` and `core + isPrimaryExpression` identically.~~
   **Resolved 2026-08-12 as a side effect of the accent fix above.** A plain
   `satellite` and the primary expression still share the words "Thesis expression",

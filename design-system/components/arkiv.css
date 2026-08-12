@@ -404,8 +404,13 @@
   border-end-end-radius: var(--radius-sm);
 }
 /* Alternating tint keeps adjacent ink segments legible without introducing a
-   second hue — structure stays one colour. */
-.ark-ribbon__seg:nth-child(even) {
+   second hue — structure stays one colour.
+   The primary segment is excluded explicitly. It is not an ink segment, and
+   :nth-child(even) outranks .ark-ribbon__seg--primary on specificity (0,2,0 vs
+   0,1,0), so without this :not() the tint silently repaints the accent whenever
+   the primary expression happens to land in an even position — the segment kept
+   its height and top-edge break but lost its colour, in about half of baskets. */
+.ark-ribbon__seg:nth-child(even):not(.ark-ribbon__seg--primary) {
   background: var(--color-ink-hover);
 }
 .ark-ribbon__seg--primary {

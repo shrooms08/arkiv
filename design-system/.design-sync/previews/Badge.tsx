@@ -13,7 +13,7 @@ export function Tones() {
     <div className="ark" style={row}>
       <Badge tone="neutral">Testnet</Badge>
       <Badge tone="structure">Confidence: high</Badge>
-      <Badge tone="verdict">Primary expression</Badge>
+      <Badge tone="verdict">Breached</Badge>
       <Badge tone="outline">12M horizon</Badge>
     </div>
   );
@@ -42,20 +42,27 @@ export function StatusMarkers() {
   );
 }
 
-/** Verdict purple is rare on purpose: it only appears where a checkable claim is at stake. */
+/**
+ * Verdict purple is rare on purpose, and the only way to show that is a row
+ * where almost nothing is purple. A holding, a confidence score and a horizon
+ * are all structure — only the breach is a claim that was checked and found
+ * wrong, so only the breach is the accent.
+ */
 export function VerdictIsRare() {
   return (
     <div className="ark" style={{ ...row, flexDirection: "column", alignItems: "flex-start" }}>
       <div style={row}>
-        <Badge tone="verdict">Falsifier live</Badge>
-        <Badge tone="verdict">Breached</Badge>
-        <Badge tone="verdict">Primary expression</Badge>
-      </div>
-      <div style={row}>
         <Badge tone="neutral">{scrate.ticker}</Badge>
         <Badge tone="structure">Confidence: high</Badge>
+        <Badge tone="structure">Primary expression</Badge>
         <Badge tone="outline">Small caps vs S&amp;P 500</Badge>
-        <Badge tone="verdict">Unbreached at 12M</Badge>
+        <Badge tone="verdict">Breached</Badge>
+      </div>
+      <div style={row}>
+        <Badge tone="neutral">{stickyinf.ticker}</Badge>
+        <Badge tone="structure">Confidence: {stickyinf.confidence}</Badge>
+        <Badge tone="structure">6 holdings</Badge>
+        <Badge tone="outline">{stickyinf.falsifier.horizon} horizon</Badge>
       </div>
     </div>
   );
