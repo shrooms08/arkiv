@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 import { BasketCard, FalsifierBlock, type RibbonSegment } from "@ds";
+import { CoverImage } from "@/components/CoverImage";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { MarketingHeader } from "@/components/MarketingHeader";
 import { NetworkBanner } from "@/components/NetworkBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { coverFor } from "@/lib/ui/covers";
+import { resolveCover } from "@/lib/ui/covers";
 import { basketIndexFor } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 
@@ -131,20 +132,17 @@ export default function LandingPage() {
 
           {featured && (
             <figure className="landing-featured">
-              <picture>
-                <source
-                  type="image/webp"
-                  srcSet={`${coverFor(featured.thesis.ticker).webp720} 720w, ${coverFor(featured.thesis.ticker).webp} 1408w`}
-                  sizes="(min-width: 64rem) 34rem, 92vw"
-                />
-                <img
-                  src={coverFor(featured.thesis.ticker).png}
-                  alt={coverFor(featured.thesis.ticker).alt}
-                  width={1408}
-                  height={768}
-                  fetchPriority="high"
-                />
-              </picture>
+              <CoverImage
+                cover={resolveCover(featured.thesis.ticker)}
+                sizes="(min-width: 64rem) 34rem, 92vw"
+                priority
+                fallback={{
+                  ticker: featured.thesis.ticker,
+                  index: basketIndexFor(featured.thesis.ticker) ?? 0,
+                  horizon: featured.thesis.falsifier.horizon,
+                  segments: segmentsOf(featured.thesis.holdings, featured.thesis.primaryExpression),
+                }}
+              />
               <figcaption className="landing-featured__cap">
                 <span className="app-label">Filed record</span>
                 <span className="app-mono-meta">
@@ -207,7 +205,7 @@ export default function LandingPage() {
             <div className="ark-cardgrid">
               {rest.map((r) => {
                 const t = r.thesis;
-                const art = coverFor(t.ticker);
+                const art = resolveCover(t.ticker);
                 return (
                   <BasketCard
                     key={r.thesisHash}
@@ -220,10 +218,11 @@ export default function LandingPage() {
                     horizon={t.falsifier.horizon}
                     confidence={t.confidence}
                     segments={segmentsOf(t.holdings, t.primaryExpression)}
-                    cover={art.exists ? art.png : undefined}
-                    coverWebp={art.exists ? art.webp : undefined}
-                    coverWebp720={art.exists ? art.webp720 : undefined}
-                    coverAlt={art.alt}
+                    cover={art.kind === "photo" ? art.png : undefined}
+                    coverWebp={art.kind === "photo" ? art.webp : undefined}
+                    coverWebp720={art.kind === "photo" ? art.webp720 : undefined}
+                    coverAlt={art.kind === "photo" ? art.alt : undefined}
+                    horizonForCover={t.falsifier.horizon}
                     href={`/app/underwrite/${r.thesisHash}`}
                   />
                 );

@@ -8,13 +8,13 @@ import {
   AllocationRibbon,
   Badge,
   FalsifierBlock,
-  ProceduralCover,
   RoleLabel,
   SerialNumber,
   WeightNumeral,
   type RibbonSegment,
 } from "@ds";
 import { AddressChip } from "@/components/AddressChip";
+import { CoverImage } from "@/components/CoverImage";
 import { InvestPanel } from "@/components/InvestPanel";
 import { USDG, assetByAddress, assetBySymbol } from "@/config/assets";
 import { explainRevert } from "@/lib/chain/errors";
@@ -23,7 +23,7 @@ import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
 import { fetchCurator, type CuratorRecord } from "@/lib/chain/curator";
 import { fetchExitValuesFor, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
 import { fetchMockRates } from "@/lib/chain/rates";
-import { coverFor } from "@/lib/ui/covers";
+import { resolveCover } from "@/lib/ui/covers";
 import { dsRole } from "@/lib/ui/roles";
 
 export interface BasketRecord {
@@ -151,7 +151,7 @@ export function BasketView({
   const breached = curator?.breached ?? false;
   const resolved = breached || progress >= 1;
 
-  const art = coverFor(state.symbol);
+  const art = resolveCover(state.symbol);
   const ratesPerLeg = state.tokens.map((t) => rates?.get(t) ?? null);
 
   return (
@@ -161,25 +161,16 @@ export function BasketView({
             of non-text ink on the page and it carries the density. */}
         <header className="basket-hero">
           <div className="basket-hero__figure">
-            {art.exists ? (
-              <picture>
-                <source
-                  type="image/webp"
-                  srcSet={`${art.webp720} 720w, ${art.webp} 1408w`}
-                  sizes="(min-width: 64rem) 22rem, 92vw"
-                />
-                <img src={art.png} alt={art.alt} width={1408} height={768} fetchPriority="high" />
-              </picture>
-            ) : (
-              <div className="basket-hero__procedural">
-                <ProceduralCover
-                  ticker={state.symbol}
-                  index={record?.index ?? 0}
-                  horizon={record?.falsifier.horizon}
-                  segments={declared}
-                />
-              </div>
-            )}
+            <CoverImage
+              cover={art}
+              priority
+              fallback={{
+                ticker: state.symbol,
+                index: record?.index ?? 0,
+                horizon: record?.falsifier.horizon,
+                segments: declared,
+              }}
+            />
           </div>
 
           <div className="basket-hero__copy">

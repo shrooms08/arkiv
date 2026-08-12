@@ -17,6 +17,9 @@ const config: NextConfig = {
   async redirects() {
     return [
       { source: "/archive", destination: "/app/archive", permanent: true },
+      // The write box lives at /app, not at its own route. This exists so the
+      // URL people expect resolves rather than 404s.
+      { source: "/app/write", destination: "/app", permanent: true },
       { source: "/basket/:address", destination: "/app/basket/:address", permanent: true },
       { source: "/underwrite/:id", destination: "/app/underwrite/:id", permanent: true },
     ];

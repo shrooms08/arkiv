@@ -1141,3 +1141,47 @@ body {
   letter-spacing: var(--tracking-tight);
 }
 .invest__redeem { width: 100%; }
+
+/* ── Underwrite hero, matching the basket detail arrangement ─────── */
+.underwrite-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  align-items: flex-start;
+}
+.underwrite-hero__figure {
+  flex: 0 1 22rem;
+  min-width: 15rem;
+}
+.underwrite-hero__copy {
+  flex: 1 1 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+/* Shared hero cover box. Both heroes agree on ratio and corner by using it. */
+.underwrite-hero__figure picture,
+.underwrite-hero__figure img,
+.basket-hero__figure picture,
+.basket-hero__figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+.cover-procedural {
+  aspect-ratio: 11 / 6;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.thesis-unfiled {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.write-agent-note a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

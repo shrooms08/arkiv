@@ -11,8 +11,9 @@
     "underwrite:samples": "tsx scripts/underwrite-samples.ts",
     "typecheck": "tsc --noEmit",
     "covers": "node scripts/build-covers.mjs",
-    "prebuild": "node scripts/build-covers.mjs && node scripts/build-brand.mjs",
-    "brand": "node scripts/build-brand.mjs"
+    "prebuild": "node scripts/build-covers.mjs && node scripts/build-brand.mjs && npx tsx scripts/build-skill-reference.ts",
+    "brand": "node scripts/build-brand.mjs",
+    "skill": "npx tsx scripts/build-skill-reference.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

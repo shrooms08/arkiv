@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { BasketCard, type RibbonSegment } from "@ds";
 import { ThesisComposer } from "@/components/ThesisComposer";
-import { coverFor } from "@/lib/ui/covers";
+import { resolveCover } from "@/lib/ui/covers";
 import { basketIndexFor } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 
@@ -30,6 +30,19 @@ export default function AppHomePage() {
         </div>
 
         <ThesisComposer />
+
+        {/* A note for the people who will want it, not a feature announcement. */}
+        <p className="app-note write-agent-note">
+          Writing with an agent?{" "}
+          <a
+            href="/skills/arkiv-thesis/SKILL.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            There is a skill for that
+          </a>
+          . It teaches prose, not allocations.
+        </p>
       </section>
 
       {records.length > 0 && (
@@ -51,7 +64,7 @@ export default function AppHomePage() {
                 weightBps: Math.round((h.weightBps / total) * 10000),
                 isPrimary: h.symbol === t.primaryExpression,
               }));
-              const art = coverFor(t.ticker);
+              const art = resolveCover(t.ticker);
               return (
                 <BasketCard
                   key={r.thesisHash}
@@ -64,10 +77,11 @@ export default function AppHomePage() {
                   horizon={t.falsifier.horizon}
                   confidence={t.confidence}
                   segments={segments}
-                  cover={art.exists ? art.png : undefined}
-                  coverWebp={art.exists ? art.webp : undefined}
-                  coverWebp720={art.exists ? art.webp720 : undefined}
-                  coverAlt={art.alt}
+                  cover={art.kind === "photo" ? art.png : undefined}
+                  coverWebp={art.kind === "photo" ? art.webp : undefined}
+                  coverWebp720={art.kind === "photo" ? art.webp720 : undefined}
+                  coverAlt={art.kind === "photo" ? art.alt : undefined}
+                  horizonForCover={t.falsifier.horizon}
                   href={`/app/underwrite/${r.thesisHash}`}
                 />
               );

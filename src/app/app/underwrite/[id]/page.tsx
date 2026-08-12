@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 
 import { AllocationRibbon, AssetRow, Badge, FalsifierBlock, SerialNumber, type RibbonSegment } from "@ds";
 import { AddressChip } from "@/components/AddressChip";
+import { CoverImage } from "@/components/CoverImage";
 import { MintPanel } from "@/components/MintPanel";
 import { WrapperDisclosure } from "@/components/WrapperDisclosure";
 import { assetBySymbol } from "@/config/assets";
 import { basketIndexFor } from "@/lib/chain/deployments";
+import { resolveCover } from "@/lib/ui/covers";
 import { dsRole } from "@/lib/ui/roles";
 import { findRecord } from "@/lib/underwriting/lookup";
 
@@ -35,13 +37,52 @@ export default async function UnderwritePage({
 
   const serial = basketIndexFor(t.ticker) ?? 0;
 
+  // A freshly underwritten thesis has no serial until it is minted, because the
+  // serial IS the registry index. Rather than invent one or leave the slot
+  // empty, the hash short form stands in it, labelled so it cannot be misread
+  // as a filing number.
+  const shortHash = record.thesisHash.slice(0, 8);
+
+  // Never a photograph. The six committed covers are hand-made art for the six
+  // seed baskets; a thesis filed today has none and there is no pipeline that
+  // would ever give it one, so this resolves procedural by construction. It
+  // still goes through the shared resolver rather than hardcoding that, so the
+  // day a cover does exist for a ticker this page agrees with every other one.
+  const cover = resolveCover(t.ticker);
+
   return (
     <main className="app-main page-underwrite">
-      <header className="underwrite-header">
+      <header className="underwrite-hero">
+        <div className="underwrite-hero__figure">
+          <CoverImage
+            cover={cover}
+            priority
+            sizes="(min-width: 64rem) 22rem, 92vw"
+            fallback={{
+              ticker: t.ticker,
+              index: serial,
+              horizon: t.falsifier.horizon,
+              segments,
+            }}
+          />
+        </div>
+
+        <div className="underwrite-hero__copy">
         <div className="app-meta-row">
           <Badge tone="structure">Underwritten</Badge>
-          {serial > 0 && <SerialNumber index={serial} emphasis />}
-          {serial > 0 && <span className="app-meta-sep" aria-hidden="true" />}
+          {serial > 0 ? (
+            <>
+              <SerialNumber index={serial} emphasis />
+              <span className="app-meta-sep" aria-hidden="true" />
+            </>
+          ) : (
+            <>
+              <span className="app-mono-meta thesis-unfiled">
+                <span className="app-label">not yet filed</span> {shortHash}
+              </span>
+              <span className="app-meta-sep" aria-hidden="true" />
+            </>
+          )}
           <span className="app-mono-meta thesis-ticker">{t.ticker}</span>
           <span className="app-meta-sep" aria-hidden="true" />
           <span className="app-mono-meta thesis-confidence">confidence: {t.confidence}</span>
@@ -65,6 +106,7 @@ export default async function UnderwritePage({
         <div className="app-panel thesis-original-panel">
           <span className="app-label">As written</span>
           <blockquote className="thesis-original">{record.input}</blockquote>
+        </div>
         </div>
       </header>
 
