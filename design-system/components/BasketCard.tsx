@@ -2,6 +2,7 @@ import { Badge } from "./Badge";
 import { Card, CardBody, CardFooter, CardHeader } from "./Card";
 import { SerialNumber } from "./SerialNumber";
 import { AllocationRibbon, type RibbonSegment } from "./AllocationRibbon";
+import { ProceduralCover } from "./ProceduralCover";
 
 export interface BasketCardProps {
   index?: number;
@@ -32,6 +33,19 @@ export interface BasketCardProps {
    * thing to hear: the art is decorative, the record it belongs to is not.
    */
   coverAlt?: string;
+  /**
+   * WebP source for `cover`, served ahead of it via `<picture>`. The PNG stays
+   * the fallback so a browser without WebP still gets art. Optional: omit it and
+   * the card renders the `cover` file directly.
+   */
+  coverWebp?: string;
+  /** Narrower WebP for card-sized slots, offered as the 720w srcset candidate. */
+  coverWebp720?: string;
+  /**
+   * Falsifier horizon, passed to the procedural fallback so a coverless basket
+   * still shows something drawn from its own record.
+   */
+  horizonForCover?: string;
   href?: string;
   onClick?: () => void;
   className?: string;
@@ -59,6 +73,9 @@ export function BasketCard({
   segments,
   cover,
   coverAlt,
+  coverWebp,
+  coverWebp720,
+  horizonForCover,
   href,
   onClick,
   className = "",
@@ -69,9 +86,38 @@ export function BasketCard({
 
   const content = (
     <>
-      {cover && (
+      {/* Art when there is a file, and the basket's own data drawn when there is
+          not. Never a reserved-but-blank strip, which reads as a failed image. */}
+      {cover ? (
         <div className="ark-basketcard__cover">
-          <img src={cover} alt={coverAlt ?? (name ? `${name} — cover` : "Basket cover")} />
+          <picture>
+            {coverWebp && (
+              <source
+                type="image/webp"
+                srcSet={
+                  coverWebp720
+                    ? `${coverWebp720} 720w, ${coverWebp} 1408w`
+                    : coverWebp
+                }
+                sizes="(min-width: 80rem) 26rem, (min-width: 48rem) 45vw, 92vw"
+              />
+            )}
+            <img
+              src={cover}
+              alt={coverAlt ?? (name ? `${name}, cover art` : "Basket cover")}
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+        </div>
+      ) : (
+        <div className="ark-basketcard__cover ark-basketcard__cover--procedural">
+          <ProceduralCover
+            ticker={ticker}
+            index={index}
+            horizon={horizonForCover ?? horizon}
+            segments={segments ?? []}
+          />
         </div>
       )}
 

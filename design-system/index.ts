@@ -65,6 +65,9 @@ export type { WeightNumeralProps, WeightSize } from "./components/WeightNumeral"
 export { AllocationRibbon, AllocationRibbonDemo } from "./components/AllocationRibbon";
 export type { AllocationRibbonProps, RibbonSegment } from "./components/AllocationRibbon";
 
+export { ProceduralCover, ProceduralCoverDemo } from "./components/ProceduralCover";
+export type { ProceduralCoverProps } from "./components/ProceduralCover";
+
 export { AssetRow, AssetRowDemo, truncateAddress } from "./components/AssetRow";
 export type { AssetRowProps } from "./components/AssetRow";
 

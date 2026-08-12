@@ -13,3 +13,6 @@ next-env.d.ts
 
 # macOS finder noise
 .DS_Store
+
+# Generated from the committed cover PNGs by scripts/build-covers.mjs
+public/covers/*.webp

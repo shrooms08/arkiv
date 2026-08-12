@@ -170,7 +170,7 @@ export default async function UnderwritePage({
       <p className="app-note provenance">
         Underwritten by <code>{record.model}</code>, prompt <code>{record.promptVersion}</code>,
         effort <code>{record.effort}</code>, {record.attempts} attempt
-        {record.attempts === 1 ? "" : "s"} · <Link href="/archive">Archive</Link>
+        {record.attempts === 1 ? "" : "s"} · <Link href="/app/archive">Archive</Link>
       </p>
     </main>
   );

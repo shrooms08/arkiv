@@ -334,7 +334,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
 
       {step === "done" && basketAddress && (
         <p className="mint-success">
-          Minted. <a href={`/basket/${basketAddress}`}>View basket</a>
+          Minted. <a href={`/app/basket/${basketAddress}`}>View basket</a>
         </p>
       )}
       {step === "error" && (

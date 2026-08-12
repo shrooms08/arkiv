@@ -1124,3 +1124,112 @@
   aspect-ratio: 11 / 6;
   object-fit: cover;
 }
+
+/* ===================================================================
+ * ProceduralCover
+ *
+ * The cover a basket gets when it has no artwork. Container queries size the
+ * type from the element's own width, so the same component reads correctly in
+ * a 340px card and in a 900px hero without a size prop.
+ * =============================================================== */
+
+.ark-proccover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  overflow: hidden;
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  container-type: inline-size;
+}
+.ark-proccover__plate {
+  position: relative;
+  flex: 0 0 37%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: clamp(var(--space-3), 3.5cqw, var(--space-6));
+}
+/* Hairline separating the identity plate from the weight bands. */
+.ark-proccover__plate::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 1px;
+  background: var(--color-ink-inverse);
+  opacity: 0.22;
+}
+.ark-proccover__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ark-proccover__label,
+.ark-proccover__legend {
+  font-family: var(--font-mono);
+  font-size: clamp(var(--text-nano), 1.5cqw, var(--text-micro));
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ark-proccover__serial {
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-h3), 6.6cqw, var(--text-display-l));
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ark-proccover__ticker {
+  font-family: var(--font-mono);
+  font-size: clamp(var(--text-nano), 1.9cqw, var(--text-small));
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.ark-proccover__bands {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+.ark-proccover__band {
+  flex-basis: 0;
+  min-width: 0;
+}
+/* Only the overshoot above the rule is purple. Verdict marks one thing. */
+.ark-proccover__band--primary {
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-verdict) 0 29.5%,
+    var(--color-ink-inverse) 29.5%
+  );
+}
+.ark-proccover__rule {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 62%;
+  height: 1px;
+  background: var(--color-ink-inverse);
+  opacity: 0.28;
+}
+
+/* BasketCard cover, WebP with PNG fallback. */
+.ark-basketcard__cover picture,
+.ark-basketcard__cover img {
+  display: block;
+  width: 100%;
+}
+.ark-basketcard__cover--procedural {
+  aspect-ratio: 11 / 6;
+}

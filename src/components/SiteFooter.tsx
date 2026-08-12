@@ -14,8 +14,8 @@ const COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "Write a thesis", href: "/" },
-      { label: "Archive", href: "/archive" },
+      { label: "Write a thesis", href: "/app" },
+      { label: "Archive", href: "/app/archive" },
     ],
   },
   {

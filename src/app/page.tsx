@@ -1,21 +1,18 @@
 import Link from "next/link";
 
-import { BasketCard, type RibbonSegment } from "@ds";
+import { BasketCard, FalsifierBlock, type RibbonSegment } from "@ds";
 import { FaqAccordion } from "@/components/FaqAccordion";
-import { ThesisComposer } from "@/components/ThesisComposer";
+import { MarketingHeader } from "@/components/MarketingHeader";
+import { NetworkBanner } from "@/components/NetworkBanner";
+import { SiteFooter } from "@/components/SiteFooter";
+import { coverFor } from "@/lib/ui/covers";
 import { basketIndexFor } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Tickers with cover art committed under `public/covers/`.
- *
- * Listed rather than probed because this renders on the server and a missing
- * file should degrade to no cover, not to a broken image. Art arrives on its own
- * track; a basket without one renders without a cover band by design.
- */
-const COVERS = new Set(["AIBOTTLE", "STICKYINF", "SCRATE"]);
+/** The basket shown in full at the top of the page. */
+const FEATURED = "AIBOTTLE";
 
 const FAQ = [
   {
@@ -28,154 +25,240 @@ const FAQ = [
     id: "ai",
     question: "What does the underwriter decide, and what does it not?",
     answer:
-      "It chooses the legs and their weights, writes the reason for each size, and writes the falsifier — the observable and the breach condition. It does not choose your thesis, and it cannot change a filed basket afterwards. If it is wrong, the falsifier is the thing that says so.",
+      "It chooses the legs and their weights, writes the reason for each size, and writes the falsifier, meaning the observable and the breach condition. It does not choose your thesis, and it cannot change a filed basket afterwards. If it is wrong, the falsifier is the thing that says so.",
   },
   {
     id: "falsifier",
     question: "What happens when a falsifier is breached?",
     answer:
-      "The basket is marked breached in the archive and keeps its serial number. Nothing is liquidated automatically — a breach is a verdict on the claim, not a stop-loss. The record stays visible, which is the point of filing it.",
+      "The basket is marked breached in the archive and keeps its serial number. Nothing is liquidated automatically, because a breach is a verdict on the claim and not a stop-loss. The author's share of the mint fee stops permanently from that point. The record stays visible, which is the point of filing it.",
   },
   {
-    id: "wrappers",
-    question: "Who controls the underlying wrappers?",
+    id: "fee",
+    question: "How does Arkiv make money?",
     answer:
-      "A third-party issuer, not Arkiv. The wrapper contracts are upgradeable by a 2-of-3 multisig whose address is linked on every basket page. An upgrade can change how a wrapper redeems, and it is the largest non-market risk in the product.",
+      "A 30 bps fee on the USDG going into a mint, hard-capped in the contract at 100 bps. Half accrues to the author of the thesis, and only while their thesis stands. There is no redemption fee at any setting: the exit is unconditional.",
   },
   {
     id: "testnet",
     question: "Is any of this real money?",
     answer:
-      "No. Arkiv is live on X Layer testnet. Every asset is a mock, price impact is not simulated, and the faucet hands out test USDG inside the mint flow. Nothing here is a security or investment advice.",
+      "No. Arkiv is live on X Layer testnet. Every asset is a mock, price impact is not simulated, and a faucet hands out test USDG inside the mint flow. Nothing here is a security or investment advice.",
   },
 ];
 
-const PROMISES = [
+const HOW = [
   {
-    title: "A weight is an argument",
-    body: "Every holding carries a written reason for its size, not a category label.",
+    step: "01",
+    title: "Write what you believe",
+    body: "A paragraph, in your own words. The underwriter needs a mechanism, meaning what you think happens and why, not a ticker.",
   },
   {
-    title: "A claim you can lose",
-    body: "Each thesis files an observable and a breach condition before anything is minted.",
+    step: "02",
+    title: "Get weights and an argument",
+    body: "Every holding comes back with a written reason for its size. A weight is an argument, not a category label.",
   },
   {
-    title: "One transaction",
-    body: "The legs are bought, wrapped and recorded in a single mint on X Layer.",
+    step: "03",
+    title: "File the falsifier",
+    body: "An observable and a breach condition, recorded on chain before anything is minted. This is the part that makes the claim checkable.",
   },
   {
-    title: "It stays on the shelf",
-    body: "A thesis keeps its serial number after it resolves, including when it was wrong.",
+    step: "04",
+    title: "It keeps its number",
+    body: "The thesis stays in the archive after it resolves, including when it was wrong. That is what makes the record worth anything.",
   },
 ];
 
-export default function HomePage() {
-  // Server-side read of the reproducibility log and fixtures. No chain call is
-  // made here — serials come from the committed deployment manifest, which
-  // records registry creation order.
+export default function LandingPage() {
+  // Server-side read of the fixtures and reproducibility log. No chain call.
   const records = allRecords();
+  const featured = records.find((r) => r.thesis.ticker === FEATURED) ?? records[0];
+  const rest = records.filter((r) => r !== featured);
+
+  const segmentsOf = (holdings: { symbol: string; weightBps: number }[], primary: string) => {
+    const total = holdings.reduce((a, h) => a + h.weightBps, 0) || 1;
+    return holdings.map<RibbonSegment>((h) => ({
+      id: h.symbol,
+      label: h.symbol,
+      weightBps: Math.round((h.weightBps / total) * 10000),
+      isPrimary: h.symbol === primary,
+    }));
+  };
 
   return (
-    <main className="app-main page-home">
-      <section className="home-hero">
-        <div className="home-hero__copy">
-          <h1 className="app-display-h1">
-            Write a thesis. Get a portfolio that says what would prove it wrong.
-          </h1>
-          <p className="app-lede">
-            Describe what you believe in plain English. An underwriter turns it into a
-            weighted basket of tokenized US equities, argues for the size of every
-            holding, and files the condition that would prove you wrong — permanently,
-            with a serial number.
-          </p>
-          <div className="home-stats">
-            <span className="home-stat">
-              <span className="home-stat__value">{records.length}</span>
-              <span className="app-label">theses filed</span>
-            </span>
-            <span className="home-stat">
-              <span className="home-stat__value">
-                {records.filter((r) => basketIndexFor(r.thesis.ticker)).length}
-              </span>
-              <span className="app-label">minted on chain</span>
-            </span>
-            <span className="home-stat">
-              <span className="home-stat__value">
-                {new Set(records.map((r) => r.thesis.primaryExpression)).size}
-              </span>
-              <span className="app-label">distinct expressions</span>
-            </span>
-          </div>
-        </div>
+    <>
+      <NetworkBanner />
+      <MarketingHeader />
 
-        <ThesisComposer />
-      </section>
-
-      {records.length > 0 && (
-        <section className="home-section">
-          <div className="app-rule-heading app-rule-heading--emphasis">
-            <h2>Already on file</h2>
-            <Link className="app-note home-archive-link" href="/archive">
-              Open the archive
-            </Link>
+      <main className="app-main page-landing">
+        <section className="landing-hero">
+          <div className="landing-hero__copy">
+            <h1 className="app-display-h1">
+              Write a thesis. Get a portfolio that says what would prove it wrong.
+            </h1>
+            <p className="app-lede">
+              Describe what you believe in plain English. An underwriter turns it into a
+              weighted basket of tokenized US equities, argues for the size of every
+              holding, and files the condition that would prove you wrong. Permanently,
+              with a serial number.
+            </p>
+            <div className="landing-cta">
+              <Link className="ark-btn ark-btn--primary ark-btn--lg" href="/app">
+                Open the app
+              </Link>
+              <Link className="app-note landing-cta__secondary" href="/app/archive">
+                Read the archive
+              </Link>
+            </div>
+            <div className="home-stats">
+              <span className="home-stat">
+                <span className="home-stat__value">{records.length}</span>
+                <span className="app-label">theses filed</span>
+              </span>
+              <span className="home-stat">
+                <span className="home-stat__value">
+                  {records.filter((r) => basketIndexFor(r.thesis.ticker)).length}
+                </span>
+                <span className="app-label">minted on chain</span>
+              </span>
+              <span className="home-stat">
+                <span className="home-stat__value">0</span>
+                <span className="app-label">proved wrong so far</span>
+              </span>
+            </div>
           </div>
 
-          <div className="ark-cardgrid">
-            {records.map((r) => {
-              const t = r.thesis;
-              const total = t.holdings.reduce((a, h) => a + h.weightBps, 0) || 1;
-              const segments: RibbonSegment[] = t.holdings.map((h) => ({
-                id: h.symbol,
-                label: h.symbol,
-                weightBps: Math.round((h.weightBps / total) * 10000),
-                isPrimary: h.symbol === t.primaryExpression,
-              }));
-              return (
-                <BasketCard
-                  key={r.thesisHash}
-                  index={basketIndexFor(t.ticker) ?? 0}
-                  name={t.title}
-                  ticker={t.ticker}
-                  thesis={t.summary}
-                  symbols={t.holdings.map((h) => h.symbol)}
-                  primaryExpression={t.primaryExpression}
-                  horizon={t.falsifier.horizon}
-                  confidence={t.confidence}
-                  segments={segments}
-                  cover={COVERS.has(t.ticker) ? `/covers/${t.ticker}.png` : undefined}
-                  coverAlt={`${t.title}, cover art`}
-                  href={`/underwrite/${r.thesisHash}`}
+          {featured && (
+            <figure className="landing-featured">
+              <picture>
+                <source
+                  type="image/webp"
+                  srcSet={`${coverFor(featured.thesis.ticker).webp720} 720w, ${coverFor(featured.thesis.ticker).webp} 1408w`}
+                  sizes="(min-width: 64rem) 34rem, 92vw"
                 />
-              );
-            })}
+                <img
+                  src={coverFor(featured.thesis.ticker).png}
+                  alt={coverFor(featured.thesis.ticker).alt}
+                  width={1408}
+                  height={768}
+                  fetchPriority="high"
+                />
+              </picture>
+              <figcaption className="landing-featured__cap">
+                <span className="app-label">Filed record</span>
+                <span className="app-mono-meta">
+                  {featured.thesis.ticker} · expresses {featured.thesis.primaryExpression} ·{" "}
+                  {featured.thesis.falsifier.horizon} horizon
+                </span>
+              </figcaption>
+            </figure>
+          )}
+        </section>
+
+        {featured && (
+          <section className="landing-section">
+            <div className="app-rule-heading app-rule-heading--emphasis">
+              <h2>What a filed thesis looks like</h2>
+              <span className="app-note">the falsifier, exactly as recorded</span>
+            </div>
+            <div className="landing-falsifier">
+              <FalsifierBlock
+                index={basketIndexFor(featured.thesis.ticker) ?? 0}
+                claim={featured.thesis.falsifier.claim}
+                observable={featured.thesis.falsifier.observable}
+                breachCondition={featured.thesis.falsifier.breachCondition}
+                horizon={featured.thesis.falsifier.horizon}
+                progress={0}
+              />
+              <p className="app-prose">
+                Every competitor puts a return figure here. This is what sits in that
+                position instead: a claim, an instrument to measure it with, and the
+                condition that would settle it against the author. It is written before
+                anyone could know the answer, and it cannot be edited afterwards.
+              </p>
+            </div>
+          </section>
+        )}
+
+        <section className="landing-section" id="how">
+          <div className="app-rule-heading app-rule-heading--emphasis">
+            <h2>How it works</h2>
+          </div>
+          <ol className="landing-steps">
+            {HOW.map((h) => (
+              <li className="landing-step" key={h.step}>
+                <span className="landing-step__num">{h.step}</span>
+                <h3 className="home-promise__title">{h.title}</h3>
+                <p className="app-prose">{h.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {rest.length > 0 && (
+          <section className="landing-section">
+            <div className="app-rule-heading app-rule-heading--emphasis">
+              <h2>Also on file</h2>
+              <Link className="app-note home-archive-link" href="/app/archive">
+                Open the archive
+              </Link>
+            </div>
+            <div className="ark-cardgrid">
+              {rest.map((r) => {
+                const t = r.thesis;
+                const art = coverFor(t.ticker);
+                return (
+                  <BasketCard
+                    key={r.thesisHash}
+                    index={basketIndexFor(t.ticker) ?? 0}
+                    name={t.title}
+                    ticker={t.ticker}
+                    thesis={t.summary}
+                    symbols={t.holdings.map((h) => h.symbol)}
+                    primaryExpression={t.primaryExpression}
+                    horizon={t.falsifier.horizon}
+                    confidence={t.confidence}
+                    segments={segmentsOf(t.holdings, t.primaryExpression)}
+                    cover={art.exists ? art.png : undefined}
+                    coverWebp={art.exists ? art.webp : undefined}
+                    coverWebp720={art.exists ? art.webp720 : undefined}
+                    coverAlt={art.alt}
+                    href={`/app/underwrite/${r.thesisHash}`}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <section className="landing-section" id="questions">
+          <div className="home-faq">
+            <div className="home-faq__intro">
+              <h2 className="app-display-h1 home-faq__heading">Questions</h2>
+              <p className="app-prose">
+                The ones worth answering before you write anything.
+              </p>
+            </div>
+            <div className="home-faq__body">
+              <FaqAccordion items={FAQ} />
+            </div>
           </div>
         </section>
-      )}
 
-      <section className="home-promises">
-        {PROMISES.map((p) => (
-          <div className="home-promise" key={p.title}>
-            <h3 className="home-promise__title">{p.title}</h3>
-            <p className="app-prose">{p.body}</p>
-          </div>
-        ))}
-      </section>
+        <section className="landing-close">
+          <h2 className="app-display-h1">Put a claim on the record.</h2>
+          <Link className="ark-btn ark-btn--primary ark-btn--lg" href="/app">
+            Open the app
+          </Link>
+          <p className="app-prose">
+            Not investment advice. The underwriter has no market data and cannot verify
+            its own claims. Testnet only, and every asset on it is a mock.
+          </p>
+        </section>
+      </main>
 
-      <section className="home-faq">
-        <div className="home-faq__intro">
-          <h2 className="app-display-h1 home-faq__heading">Questions</h2>
-          <p className="app-prose">The ones worth answering before you write anything.</p>
-        </div>
-        <div className="home-faq__body">
-          <FaqAccordion items={FAQ} />
-        </div>
-      </section>
-
-      <p className="app-prose">
-        Not investment advice. The underwriter has no market data and cannot verify its
-        own claims — see the{" "}
-        <a href="https://github.com/arkiv/docs/UNDERWRITING.md">published rubric</a>.
-      </p>
-    </main>
+      <SiteFooter />
+    </>
   );
 }

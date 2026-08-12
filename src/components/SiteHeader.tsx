@@ -9,8 +9,8 @@ import { chainUsesMocks } from "@/lib/chain/chains";
 import { WalletBar } from "./WalletBar";
 
 const LINKS = [
-  { href: "/", label: "Write" },
-  { href: "/archive", label: "Archive" },
+  { href: "/app", label: "Write" },
+  { href: "/app/archive", label: "Archive" },
 ];
 
 /**
@@ -30,7 +30,7 @@ export function SiteHeader() {
   return (
     <nav className="ark ark-nav" aria-label="Primary">
       <div className="ark-container ark-nav__inner">
-        <Link className="ark-nav__brand" href="/">
+        <Link className="ark-nav__brand" href="/app">
           Arkiv
           {network && <Badge tone="neutral">{network}</Badge>}
         </Link>

@@ -160,7 +160,7 @@ export default function ArchivePage() {
               </div>
 
               <div className="archive-col-thesis archive-cell">
-                <Link className="archive-entry-name" href={`/basket/${entry.address}`}>
+                <Link className="archive-entry-name" href={`/app/basket/${entry.address}`}>
                   {entry.name}
                 </Link>
                 <div className="app-meta-row archive-entry-meta">
