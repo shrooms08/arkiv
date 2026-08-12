@@ -1,195 +1,176 @@
 # Arkiv
 
-An archive of investment theses, on X Layer.
+**A thesis is not a portfolio until you say what would prove it wrong.**
 
-Someone writes down what they believe, in weights they have to commit to and a
-falsifier they have to state. It becomes a basket you can mint with USDG and
-redeem in kind. The weights never change, so what happens next is a record of
-whether the thesis was right.
+Arkiv turns an investment thesis written in plain English into a weighted basket of tokenised US equities, and files it on chain permanently with a serial number. Every thesis must carry a falsifier: a written condition that would show the author was mistaken. The record stays whether the thesis holds or breaks.
 
-- [`docs/FINDINGS.md`](docs/FINDINGS.md) — what was verified on chain 196, and how
-- [`docs/RISKS.md`](docs/RISKS.md) — what this design does not fix
-- [`contracts/`](contracts/) — Foundry project, 146 tests including live-fork tests
+Built for the OKX Build X Series AI Season, AI-RWA track, on X Layer.
 
-## Read this before you mint
+- Live: https://arkiv-protocol.vercel.app
+- Chain: X Layer testnet, chain 1952
+- Source: this repository
 
-**The underlying tokens are upgradeable by a 2-of-3 multisig.** Every xStocks
-wrapper Arkiv holds is an EIP-1967 proxy, and all of them share one ProxyAdmin
-owned by a Gnosis Safe with a 2-of-3 threshold:
-[`0x49754062E35f7591B93cc4F9915965be89643a65`](https://www.oklink.com/xlayer/address/0x49754062E35f7591B93cc4F9915965be89643a65).
-Two of three keyholders can replace the implementation of every token in the
-vault. Arkiv's accounting would remain correct and would faithfully report
-holdings that were no longer worth anything. This is not a flaw Arkiv introduced
-and not one it can engineer away — it is the standing condition of holding any
-Backed xStock, on any chain.
+---
 
-**xStocks are not shares.** They are tracker certificates issued by Backed giving
-economic exposure to an underlying equity. No voting rights, no direct dividend
-entitlement, no shareholder claim on the underlying company. The position is a
-claim on Backed. Arkiv is a basket-construction protocol on top of these
-instruments; it does not change what they are.
+## Live deployment
 
-**The AI underwriter is not investment advice.** It can produce a confident,
-well-argued, wrong thesis. It has no market data feed and cannot verify its own
-claims. What it cannot do is break the rules: weights must sum to 10000, index
-assets must be at least 50%, every symbol must be in a fixed on-chain allowlist,
-and non-conforming output is rejected rather than repaired. The mandatory
-falsifier is the honest core of the product — it is what lets you find out later
-that you were wrong.
+Registry `0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c`
 
-## Two decisions worth stating plainly
+| Serial | Ticker | Basket |
+|---|---|---|
+| ARKIV-0001 | AIBOTTLE | `0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a` |
+| ARKIV-0002 | STICKYINF | `0x2100153203d303B82e6Ec21BDeD4bb32E455F789` |
+| ARKIV-0003 | SCRATE | `0x8964db9f1FCC6D86F34600AF40D844C715971D27` |
+| ARKIV-0004 | ATTENTION | `0x6a232080E2Eb3C236F866fA92c35b246D2C86192` |
+| ARKIV-0005 | EDGEAI | `0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C` |
+| ARKIV-0006 | CAPEXPAY | `0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d` |
 
-**Redemption can never be blocked.** `redeem` is not pausable and not
-sanctions-screened. Screening happens on the way in, on both the payer and the
-share receiver; on the way out there is no check at all.
+All 24 contracts verified on Sourcify at `https://repo.sourcify.dev/1952/<address>`, confirmed through the Sourcify API rather than from deploy logs.
 
-This asymmetry is deliberate. Redemption is in-kind and touches no pool, so a
-redeemer takes their own pro-rata slice and nothing more — it cannot be used to
-extract value from anyone else. Gating it would mean the owner key or a
-third-party deny-list could **trap** user funds in the vault indefinitely.
-Trapping people is a worse outcome than letting a screened address take back what
-is already theirs.
+Economics are live on chain, not documented aspiration. `quoteMintFee(1000e6)` returns a fee of 3 USDG against 997 net. Six seed mints have booked 9.00 USDG of fee, split 4.50 to the curator and 4.50 to the protocol.
 
-**Rebasing tokens are refused by property, not by list.** The xStocks *base*
-tokens rebase; the *wrappers* do not. Rather than maintain a deny-list of base
-addresses someone has to remember to update, `Arkiv.setAssetAllowed` probes
-`multiplier()` on any token being allowlisted and reverts if it answers. Every
-base token answers; every wrapper reverts. The invariant "no rebasing token ever
-enters the vault" is therefore self-enforcing — against operator error, and
-against assets nobody has classified yet. Confirmed on-chain in both directions
-across all 14 wrappers and three bases.
+146 contract tests and 25 application tests pass.
 
-## A guard demanded for one reason caught a different bug
+---
 
-Review asked for defences against the classic first-depositor inflation attack.
-That attack turned out not to reach Arkiv — it needs the vault to price shares
-off `balanceOf`, and Arkiv prices off an internal `reserves` ledger that a
-donation cannot move.
+## The falsifier
 
-The dead-shares guard went in anyway, and it closed something else that was
-real. A redeemer takes `floor(B_i * shares / S)`, so before this, the last
-holder leaving could floor a leg to zero and permanently brick minting on
-`EmptyLeg` — no attacker, no donation, just an empty basket. With 1000 dead
-shares the residue is `ceil(B_i * 1000 / S)`, at least 1 wei whenever the leg is
-non-empty, so **every leg stays non-zero for the life of the basket**.
+Every basket product answers the question "what should I buy". None of them answer "how will I know if this was wrong".
 
-Written up as R12 in [`docs/RISKS.md`](docs/RISKS.md), with a direct test and a
-fuzz across twelve orders of magnitude of reserve size.
+An Arkiv thesis is not accepted without a falsifier, which has four parts: the claim, the observable that would test it, the breach condition, and the horizon. Here are three of the six currently filed.
 
-## Where it runs
+| Serial | Observable | Breaches when |
+|---|---|---|
+| ARKIV-0003 | Rolling 12-month total return, IWMx against SPYx | IWMx trails SPYx by more than 5 percentage points at horizon |
+| ARKIV-0004 | Meta and Alphabet operating margin, ARPU, ad pricing | Both show flat or declining margins for two consecutive quarters, or both show declining ARPU |
+| ARKIV-0005 | Apple on-device query share, NVIDIA data-center revenue growth | NVIDIA data-center revenue grows over 25% year on year for two consecutive quarters while Apple ships no material on-device expansion |
 
-**Live: https://arkiv-protocol.vercel.app**
+This matters because a thesis being wrong and a buyer losing money are different events, and almost every product in this category conflates them.
 
-**X Layer testnet (chain 1952)** is the live, clickable deployment. Connect, use
-the faucet, mint, redeem. The assets there are **mocks**, and the app says so on
-every page.
+A thesis can be exactly right while the stock falls, because a court intervened or a recession arrived. A thesis can be entirely wrong while the stock rises, because something unrelated went well. Judging authors by returns rewards luck and punishes bad luck, and nobody learns anything from either.
 
-All 24 contracts are deployed and **verified on Sourcify**, including the six
-per-basket `Basket` contracts that actually hold the funds. Every address lives
-in [`deployments/xlayer-testnet.json`](deployments/xlayer-testnet.json), written
-from the broadcast artefact and the chain rather than typed, and read directly by
-the frontend — so a clone resolves the same addresses the live site uses.
+Arkiv keeps two separate records. What the holder's position is worth tracks the underlying equities and nothing else. Whether the author was right tracks the falsifier. Curator fees are gated on the second, not the first.
 
-| Contract | Address |
-| --- | --- |
-| Arkiv (registry + factory) | [`0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c`](https://www.oklink.com/xlayer-test/address/0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c) |
-| MockUSDG (6dp, public faucet) | [`0x11b8B3D85b228923f37495D82d25f51eA2834EBa`](https://www.oklink.com/xlayer-test/address/0x11b8B3D85b228923f37495D82d25f51eA2834EBa) |
-| MockDexAdapter | [`0x2BBeC8d5aAEBe5aebcAeB8522877D0F6EC8D54b1`](https://www.oklink.com/xlayer-test/address/0x2BBeC8d5aAEBe5aebcAeB8522877D0F6EC8D54b1) |
-| MockSanctionsList | [`0xA19BE2A1d66676C783573490350810ECD387029c`](https://www.oklink.com/xlayer-test/address/0xA19BE2A1d66676C783573490350810ECD387029c) |
-| Basket, AIBOTTLE | [`0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a`](https://www.oklink.com/xlayer-test/address/0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a) |
-| Basket, STICKYINF | [`0x2100153203d303B82e6Ec21BDeD4bb32E455F789`](https://www.oklink.com/xlayer-test/address/0x2100153203d303B82e6Ec21BDeD4bb32E455F789) |
-| Basket, SCRATE | [`0x8964db9f1FCC6D86F34600AF40D844C715971D27`](https://www.oklink.com/xlayer-test/address/0x8964db9f1FCC6D86F34600AF40D844C715971D27) |
-| Basket, ATTENTION | [`0x6a232080E2Eb3C236F866fA92c35b246D2C86192`](https://www.oklink.com/xlayer-test/address/0x6a232080E2Eb3C236F866fA92c35b246D2C86192) |
-| Basket, EDGEAI | [`0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C`](https://www.oklink.com/xlayer-test/address/0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C) |
-| Basket, CAPEXPAY | [`0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d`](https://www.oklink.com/xlayer-test/address/0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d) |
+---
 
-The 14 mock wrappers are in the manifest. Sourcify source for any of them:
-`https://repo.sourcify.dev/1952/<address>`.
+## How it works
 
-Each basket was minted into with $500 of mock USDG and half redeemed during the
-deploy, so every contract listed has demonstrably worked rather than merely
-compiled. The mint fee is live at 30 bps: those six mints booked $9.00 of fee,
-split $4.50 to the curator and $4.50 to the protocol.
+**Write.** A thesis in prose. No ticker picking, no weight sliders.
 
-**The curator on all six baskets is the deployer.** That is a testnet artefact
-of seeding the archive from a script, not a claim about how curation works. On a
-real deployment the curator is whoever calls `createBasket`.
+**Underwrite.** An AI underwriter returns a weighted basket with a rationale for each holding and a falsifier for the whole. Output is validated server side and again on chain: weights sum to 10000 bps, index and broad-exposure holdings total at least 5000 bps, the primary expression carries at least 1500 bps, 2 to 8 legs, 500 bps minimum per leg, allowlisted assets only. One retry, then a hard failure. Violations are reported, never silently repaired.
 
-They are mocks for a reason that is worth stating rather than hiding: **X Layer
-testnet has no xStocks, no USDG and no pools.** There is nothing real to swap
-into. A "testnet deployment" against the real asset universe is not something
-that exists to be built.
+**Mint.** One transaction path swaps USDG into every leg through the DEX and issues an ERC-20 share of that basket. Redemption is in kind and unconditional.
 
-So the same contracts are verified two ways:
+---
 
-- **Mechanism** — deployed to testnet against mocks, where anyone can exercise
-  create → mint → hold → redeem end to end.
-- **Real assets** — the identical code is exercised against the *real* mainnet
-  pools by the fork tests at a pinned block (`contracts/test/fork/`). A $5,000
-  mint blends to 18 bp of slippage; exit values agree with mint-implied prices to
-  within 0.1%; the swap callback is attacked from an EOA and holds. 30 of the 146
-  tests run against live chain-196 state.
+## Architecture decisions that carry weight
 
-The mock adapter's prices are the exit values **measured from those real pools** —
-GLDx $397.98, SPYx $777.05, NVDAx $223.73 — not round numbers. And `MockWrapper`
-deliberately does **not** implement `multiplier()`: Arkiv's allowlist probes for
-that function and refuses anything that answers, because the real xStocks *base*
-tokens rebase and must never enter a vault. A mock that got the property wrong
-would fail to allowlist and abort the deploy. The mock has to be honest for the
-deployment to work at all.
+**Wrappers only, never base tokens.** xStocks exist as a rebasing base token and a non-rebasing wrapper. The vault holds wrappers exclusively. `setAssetAllowed` probes `multiplier()` and rejects any token that rebases, so the rule enforces itself rather than depending on an operator remembering it.
 
-Mainnet launch follows the competition, as its terms require. The mainnet deploy
-script is in the repo, working, and untested against the live chain.
+**No oracle in settlement.** Shares are issued as `S × min_i(d_i / B_i)`, computed from measured swap deltas against a reserves ledger, with a `minSharesOut` bound and in-kind refund of excess to the payer. Because reserves are credited only from deltas the contract measured itself, donation and inflation attacks are inert. Dead shares are burned on the first mint of every basket. No price feed participates in issuance or redemption, so there is no oracle to manipulate and no oracle to go stale.
 
-## How it makes money, and why the fee stops
+**Redemption is unconditional.** `redeem()` reads no fee state, no breach state, and never calls the registry. It is tested paying out in full with the fee at its 100 bps cap, the basket breached, minting paused, and the holder sanctioned. This is the exit guarantee that offsets the custody trade-off described below.
 
-A mint charges **30 bps** on the USDG going in, hard-capped in the contract at
-**100 bps** so the owner cannot raise it arbitrarily. Half of that fee accrues to
-the **curator** — the address that filed the thesis. The rest goes to the
-protocol. There is **no redemption fee at any setting**: the exit stays
-unconditional, in-kind and ungated (R10).
+---
 
-The rule that matters is the third one:
+## Economics
 
-> **A curator earns only while their thesis stands.** Once the falsifier's breach
-> condition is attested on-chain, their share stops permanently and the whole fee
-> routes to the protocol.
+A mint fee, default 30 bps with a hard cap of 100, is split with the thesis author. Default split is 5000 bps to the curator.
 
-Every creator programme in DeFi pays on volume, so the incentive is to publish
-loudly and often. Arkiv pays on being right — which is only expressible because
-every basket carries a falsifiable claim, recorded on-chain at creation, before
-anyone could know the answer. A thesis that turned out wrong stops earning, and
-keeps its serial number in the archive either way.
+The part that is not conventional: **the curator's share stops on breach.** While a thesis is unbreached the author earns on every mint. Once the falsifier fires, all subsequent fees route to the protocol. Fees already accrued remain claimable, because they were earned under conditions that held at the time. Breach is permanent. A closed thesis stays closed, and an author who still believes the idea files a new one with a new falsifier and a new serial.
 
-Breach is permanent and one-directional: there is no un-breach path. It also
-reaches nothing but fee routing — a breached basket redeems exactly like a
-standing one, and a curator's already-accrued balance is never clawed back.
+So the author is paid for thinking that has not yet been shown wrong. That is a transfer from buyers, and it is worth stating plainly rather than dressing up: someone paying 3 USDG on a 1,000 USDG mint is paying for the reasoning, the construction and the exit condition. It is the same shape as paying a research service, with the difference that here you can check.
 
-**The attestor is currently a single address.** It decides when a thesis has been
-proved wrong, and that decision ends an income stream. That is a real trust
-assumption, not a detail: it is written up in full as
-[R13](docs/RISKS.md), along with what would actually fix it (a dispute window,
-then a decentralised attestation set). Every attestation commits on-chain to an
-off-chain evidence record naming the observable and the source, so a wrong call
-is checkable by anyone afterwards.
+Where holder returns come from is a separate and simpler question. The baskets hold real tokenised equities. If the underlying companies are worth more, holders are worth more. Nothing circular, no emissions, no yield sourced from later deposits.
 
-Curators are ranked by **claims that held, never by returns**. A return is mostly
-the market's and mostly luck; a falsifier published in advance that did not
-trigger is evidence about the author. `curatorRecord(address)` returns baskets
-authored, baskets breached, and claims still standing.
+---
 
-## Who controls it
+## Track record
 
-The Arkiv owner is a **single EOA**. It can pause minting, change the allowlist,
-and swap the DEX adapter. It cannot touch existing holdings — redemption is
-in-kind, pays from each basket's own accounted reserves, and is never pausable.
+`curatorRecord` currently returns 6 authored, 0 breached, 6 standing.
 
-A multisig is the production answer, and the standard should be the same 2-of-3
-we disclose for the wrappers above. Until then this is a stated trust assumption
-rather than a hidden one. See R8 in [`docs/RISKS.md`](docs/RISKS.md).
+Authors accumulate a record of claims that held, not returns that happened. That is the ranking Arkiv intends to make legible, and it is the reason breach is recorded on chain rather than in a database.
+
+**Anyone can file a thesis. Not everyone accumulates a record.** Arkiv does not decide who is worth listening to. It makes the question answerable.
+
+---
+
+## Verification against mainnet
+
+The deployment is on testnet, but the accounting is verified against real X Layer mainnet state.
+
+Thirty fork tests run against live chain 196 pools: pool derivation, quoting, minting, and full deploy. Exit values computed by the contracts agree with values measured from real pools to within 0.1%. The mock adapter used on testnet is seeded with those measured mainnet rates at zero drift, so testnet behaviour is not an approximation of mainnet behaviour, it is a replay of it.
+
+Recon findings that shaped the build are recorded in `docs/FINDINGS.md`. Briefly: X Layer is OP Stack rather than zkEVM since the October 2025 migration, Cancun is enabled so transient storage works, `--legacy` is not required, USDG is 6 decimals not 18, there is no canonical Uniswap deployment so the adapter talks to a V3 fork pool directly behind a three-lock callback guard, and Chainlink could not be verified on chain, which is the practical reason settlement carries no oracle at all.
+
+---
+
+## What we know is wrong with this
+
+This section exists because a disclosed weakness is a smaller problem than a discovered one.
+
+**R1, wrapper upgradeability.** The xStocks wrappers are upgradeable by a 2-of-3 Gnosis Safe controlled by the issuer. Arkiv cannot fix this and does not pretend to. If the wrapper implementation changes adversarially, baskets holding it are exposed. Disclosed, not mitigated.
+
+**R8, single-owner deployer.** Contracts are owned by a single EOA, `0xd8157D6E2E3017cB28F05A8E9781Af0A1bD2f080`. Appropriate for a hackathon deployment, not for real funds. Multisig is the obvious next step.
+
+**R13, single-address attestor.** Breach is called by one address, currently the deployer. The likelier failure is not a malicious breach call but a breach that should be called and is not, because nobody complains when a stream keeps paying. The mitigation is structural rather than social: the observable and its source are published at filing time, so the call is checkable against something external. The real fix is a dispute window followed by an attestation set, and that is not built.
+
+**Custody.** Arkiv holds the wrappers and issues a share. Non-custodial competitors keep assets in the user's own wallet, which is a genuinely better property and we are not going to argue otherwise. What Arkiv offers instead is an exit guarantee that cannot be switched off: redemption reads no state that anyone can change.
+
+**Testnet curator.** All six seed baskets list the deployer as curator. That is a deployment artifact, not a claim about authorship, and it is disclosed on every basket page.
+
+**xStocks are not equity.** They are tracker certificates issued by Backed Assets, giving economic exposure to the underlying share. They are not shares, they carry no voting rights, and holders have a claim on the issuer rather than on the company. Anyone describing them as stock ownership is being imprecise.
+
+**R12, a liveness bug we caught.** Redeeming an entire supply could floor a leg's balance to zero and brick subsequent mints. Dead shares burned on first mint prevent it. Recorded because the bug was real and the guard is why it is not.
+
+---
+
+## The core floor turned out to be an editor
+
+CAPEXPAY, ARKIV-0006, is the clearest evidence that the constraints do useful work rather than merely blocking things.
+
+The first version of the thesis named four beneficiaries of AI capital expenditure. It was rejected twice by validation, both times landing at 4000 bps core against a 5000 floor. This was structural rather than a model failure: clearing the floor would have left 5000 bps split four ways, and each name would have read as a token allocation rather than a conviction.
+
+The rewrite narrowed the claim to a single category of beneficiary, enterprise software vendors with an existing procurement relationship. It cleared on one call, at exactly 5000 bps core, with MSFTx as primary expression at 3000 bps.
+
+The constraint was not fighting the thesis. It was fighting the thesis being vague about who wins. A thesis that cannot survive a core floor has usually not decided what it thinks.
+
+Rejections are reported, never repaired. The two failed attempts are recorded rather than hidden.
+
+---
+
+## Bring your own agent
+
+`skills/arkiv-thesis/SKILL.md` is a published skill that teaches any AI agent to draft an Arkiv thesis: what a falsifiable claim looks like, which constraints the underwriter enforces, and why vagueness fails, with the CAPEXPAY case as worked evidence.
+
+The skill deliberately does not choose assets, assign weights, or write falsifiers. Those are the underwriter's job and are enforced on chain. A skill that produced weights would be a second unvalidated underwriter, and the constraints would stop meaning anything.
+
+---
+
+## Where this sits
+
+Thematic on-chain baskets are not a new category. The closest comparison is Cesto on Solana, which is further along on distribution and is non-custodial. Alvara on Ethereum has similar curator-fee rails and publishes an on-chain track record of what a curator did.
+
+The distinction Arkiv is making is narrow and specific. Alvara records what an author did. Arkiv records whether the author was right, and prices the difference.
+
+**You are not buying stocks. You are buying someone's argument, with the positions attached and the exit condition written down.**
+
+---
+
+## Running it
+
+```bash
+forge test                 # 146 contract tests
+npm test                   # 25 application tests
+npm run dev                # local app against testnet
+```
+
+`ANTHROPIC_MODEL` selects the underwriting model and is never hardcoded. Deployment manifests are in `deployments/`, generated from chain reads rather than local state.
+
+A note for anyone deploying this: `vercel deploy --prod` does not move a manually created alias. The deploy reports ready, every route returns 200, and the alias serves the previous build. Repoint the alias explicitly and verify in a real browser, not with curl.
+
+---
 
 ## Status
 
-Contracts complete, 146 tests. Underwriter live. Deployed and verified on
-X Layer testnet (21 contracts, three baskets seeded and exercised), app live at
-https://arkiv-protocol.vercel.app. Mainnet launch follows the competition.
+X Layer testnet. Every asset is a mock. Nothing here is a security, an offer, or investment advice.
