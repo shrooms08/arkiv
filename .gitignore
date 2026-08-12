@@ -10,3 +10,6 @@ logs/
 next-env.d.ts
 *.tsbuildinfo
 .vercel
+
+# macOS finder noise
+.DS_Store
