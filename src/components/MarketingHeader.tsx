@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ArkivMark } from "@ds";
+
 /**
  * Marketing chrome. No wallet, no network badge, no product nav.
  *
@@ -11,8 +13,14 @@ export function MarketingHeader() {
   return (
     <nav className="ark ark-nav" aria-label="Primary">
       <div className="ark-container ark-nav__inner">
-        <Link className="ark-nav__brand" href="/">
-          Arkiv
+        <Link
+          className="ark-nav__brand ark-lockup"
+          href="/"
+          style={{ ["--lockup-cap" as string]: "16px" }}
+          aria-label="Arkiv, home"
+        >
+          <ArkivMark size={16} crop="tight" />
+          <span className="ark-lockup__word">ARKIV</span>
         </Link>
         <ul className="ark-nav__links">
           <li>

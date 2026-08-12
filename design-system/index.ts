@@ -65,6 +65,19 @@ export type { WeightNumeralProps, WeightSize } from "./components/WeightNumeral"
 export { AllocationRibbon, AllocationRibbonDemo } from "./components/AllocationRibbon";
 export type { AllocationRibbonProps, RibbonSegment } from "./components/AllocationRibbon";
 
+export {
+  ArkivMark,
+  ArkivLockup,
+  ArkivMarkDemo,
+  ARKIV_MARK_SMALL_BELOW,
+} from "./components/ArkivMark";
+export type {
+  ArkivMarkProps,
+  ArkivMarkVariant,
+  ArkivMarkCrop,
+  ArkivLockupProps,
+} from "./components/ArkivMark";
+
 export { ProceduralCover, ProceduralCoverDemo } from "./components/ProceduralCover";
 export type { ProceduralCoverProps } from "./components/ProceduralCover";
 

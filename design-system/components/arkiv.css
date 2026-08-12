@@ -1239,3 +1239,60 @@
 .ark-basketcard__cover--procedural {
   aspect-ratio: 11 / 6;
 }
+
+/* ===================================================================
+ * ArkivMark and the lockup
+ *
+ * The mark fills with currentColor, so one drawing serves ink on bone and
+ * bone on ink without a reversed asset. It never takes verdict purple: that
+ * colour marks the primary expression of a filed thesis, and an accent that
+ * also appears in chrome stops carrying a claim.
+ * =============================================================== */
+
+.ark-mark {
+  display: block;
+  flex: none;
+  color: inherit;
+}
+
+.ark-lockup {
+  /* Cap height of the wordmark, which is also the glyph height. */
+  --lockup-cap: 20px;
+  /* Measured from Saira Condensed 600: cap height is 0.688 of font size. */
+  --lockup-cap-ratio: 0.688;
+  /* One glyph segment. The primary riser is 6 units wide in a 28 unit tall
+     ink box, so the gap scales with the mark rather than the spacing scale. */
+  --lockup-gap: calc(var(--lockup-cap) * 6 / 28);
+
+  display: inline-flex;
+  /* Baseline, not centre. An inline SVG sits its bottom edge on the baseline,
+     and the glyph is exactly cap height, so its top edge lands on the cap line
+     and the mark shares both edges with the letters. */
+  align-items: baseline;
+  gap: var(--lockup-gap);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.ark-lockup__word {
+  font-family: var(--font-display);
+  font-size: calc(var(--lockup-cap) / var(--lockup-cap-ratio));
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  line-height: 1;
+  /* Trailing letter-space after the V is not part of the wordmark. */
+  margin-inline-end: calc(var(--tracking-caps) * -1);
+  white-space: nowrap;
+}
+
+.ark-lockup:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+
+/* The brand slot in the nav is a lockup, so drop the text-only brand styling. */
+.ark-nav__brand.ark-lockup {
+  font-weight: inherit;
+  letter-spacing: inherit;
+}

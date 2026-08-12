@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!--
+    Favicon. The small variant, because a tab icon renders at 16px where the
+    2.5 unit gaps of the standard glyph fall under a device pixel and the band
+    reads as one solid mass.
+
+    currentColor cannot inherit into a favicon, so the polarity is set here and
+    flipped for a dark browser chrome rather than shipping a second file.
+  -->
+  <style>
+    rect { fill: #14161A; }
+    @media (prefers-color-scheme: dark) { rect { fill: #EFEDE6; } }
+  </style>
+  <rect x="4" y="26" width="13" height="12"/>
+  <rect x="21" y="10" width="8" height="28"/>
+  <rect x="33" y="26" width="11" height="12"/>
+</svg>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChainId } from "wagmi";
 
-import { Badge } from "@ds";
+import { ArkivMark, Badge } from "@ds";
 import { chainUsesMocks } from "@/lib/chain/chains";
 import { WalletBar } from "./WalletBar";
 
@@ -30,8 +30,17 @@ export function SiteHeader() {
   return (
     <nav className="ark ark-nav" aria-label="Primary">
       <div className="ark-container ark-nav__inner">
-        <Link className="ark-nav__brand" href="/app">
-          Arkiv
+        {/* Lockup, not a text wordmark. The glyph is set to the wordmark's cap
+            height so the two share a top and bottom edge, and the gap is one
+            glyph segment, both handled by .ark-lockup from the mark's geometry. */}
+        <Link
+          className="ark-nav__brand ark-lockup"
+          href="/app"
+          style={{ ["--lockup-cap" as string]: "15px" }}
+          aria-label="Arkiv, home"
+        >
+          <ArkivMark size={15} crop="tight" />
+          <span className="ark-lockup__word">ARKIV</span>
           {network && <Badge tone="neutral">{network}</Badge>}
         </Link>
 
