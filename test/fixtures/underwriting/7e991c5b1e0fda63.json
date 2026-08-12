@@ -1,0 +1,57 @@
+{
+  "thesisHash": "7e991c5b1e0fda63",
+  "input": "The AI capital expenditure bill comes due, and the market stops pricing the spending as though it were already productive. The distinction that matters is not who spent the most, it is who was already selling something to the customer they now want to sell inference to. Enterprise software vendors with an existing seat licence and an existing procurement relationship convert capacity into revenue without a new sales motion. Consumer platforms and infrastructure resellers have to build that relationship first, and they are paying for capacity in the meantime.",
+  "model": "claude-sonnet-4-6",
+  "promptVersion": "underwriter/2026-08-11.3",
+  "effort": "medium",
+  "mode": "live",
+  "attempts": 1,
+  "createdAt": "2026-08-12T14:30:51.203Z",
+  "thesis": {
+    "title": "AI Capex Reckoning: Seat-Licence Advantage",
+    "ticker": "CAPEXPAY",
+    "summary": "The market has priced AI capex as if spending equals revenue. It does not. The companies that win the inference monetisation phase are those with an existing enterprise procurement relationship — a signed MSA, a seat licence, a renewal cycle — because they can push AI features through that channel without a new sales motion. Microsoft and Alphabet fit that description. Consumer platforms and infrastructure resellers are paying for capacity they have not yet sold. The basket is long enterprise software incumbents, hedged with broad index exposure, and underweight anything that must build an enterprise relationship from scratch.",
+    "holdings": [
+      {
+        "symbol": "MSFTx",
+        "weightBps": 3000,
+        "rationale": "Microsoft sells Copilot through the existing M365 seat licence and EA renewal cycle. The causal mechanism is contract structure: when a CFO renews, AI features are already in the SKU, so incremental revenue requires no new procurement motion. This is the purest expression of the seat-licence advantage in the allowlist."
+      },
+      {
+        "symbol": "GOOGLx",
+        "weightBps": 2000,
+        "rationale": "Alphabet sells Gemini through Google Workspace and through GCP committed-use contracts already signed by enterprise customers. The existing cloud billing relationship means AI inference can be metered against a contract the customer already manages, shortening the sales cycle relative to a pure infrastructure reseller."
+      },
+      {
+        "symbol": "QQQx",
+        "weightBps": 2500,
+        "rationale": "The Nasdaq 100 holds both the winners and losers of the capex reckoning. It serves as the liquid core anchor and ensures the basket participates if the thesis is wrong and the market continues to price capex as productive. It also provides diversified tech exposure without concentrating in any single capex-heavy name."
+      },
+      {
+        "symbol": "SPYx",
+        "weightBps": 2500,
+        "rationale": "Broad index anchor that captures the macro environment. If AI capex compression triggers a broader tech selloff, SPYx dampens the drawdown relative to a pure-tech basket. Its weight reflects that the thesis is about relative performance within tech, not a directional bet against the market."
+      }
+    ],
+    "primaryExpression": "MSFTx",
+    "falsifier": {
+      "claim": "Enterprise software vendors with existing seat licences convert AI capacity into incremental revenue faster than consumer platforms because the procurement relationship already exists.",
+      "observable": "Microsoft and Alphabet quarterly earnings: specifically, Copilot/AI attach revenue disclosed in each company's earnings report and management commentary on AI seat conversion rates.",
+      "breachCondition": "If neither Microsoft nor Alphabet reports accelerating AI-driven revenue growth (ARR or seat attach) in two consecutive quarters while capex remains flat or rising, the conversion-advantage thesis is broken.",
+      "horizon": "12M"
+    },
+    "confidence": "medium"
+  },
+  "costs": [
+    {
+      "model": "claude-sonnet-4-6",
+      "inputTokens": 137,
+      "outputTokens": 622,
+      "cacheWriteTokens": 3130,
+      "cacheReadTokens": 0,
+      "usd": 0.0214785,
+      "unpriced": false
+    }
+  ],
+  "totalUsd": 0.0214785
+}

@@ -23,15 +23,7 @@ interface Sample {
 const SAMPLES: Sample[] = [
   {
     intendedTicker: "CAPEXPAY",
-    text: "The AI capital expenditure bill comes due, and the market stops pricing the spending as though it were already productive. Hyperscalers have committed enormous sums to buildout on the assumption that revenue follows on a schedule nobody has published. The firms that come out ahead are the ones with existing distribution to sell inference into, because they can monetise capacity against a customer base they already own rather than one they still have to win. Scale of budget is not the differentiator. Proximity to a paying customer is.",
-  },
-  {
-    intendedTicker: "ATTENTION",
-    text: "Generative models collapse the cost of producing content, and the scarce asset stops being supply and becomes distribution. When anyone can make an unlimited quantity of adequate material, the constraint moves to who can put it in front of people. Platforms that already own an audience capture the surplus, because they can fill more inventory at lower production cost without acquiring a single additional user. The value accrues to the pipe, not to what flows through it.",
-  },
-  {
-    intendedTicker: "EDGEAI",
-    text: "Inference migrates from the datacenter to the device. As models shrink and the silicon in consumer hardware improves, the economics favour running the work where the user already is, avoiding the round trip, the rental cost and the privacy exposure of sending everything to a server. Value shifts from cloud capacity toward the firms that control the device and the software layer sitting on it. The datacenter buildout does not stop, but the marginal query stops going there.",
+    text: "The AI capital expenditure bill comes due, and the market stops pricing the spending as though it were already productive. The distinction that matters is not who spent the most, it is who was already selling something to the customer they now want to sell inference to. Enterprise software vendors with an existing seat licence and an existing procurement relationship convert capacity into revenue without a new sales motion. Consumer platforms and infrastructure resellers have to build that relationship first, and they are paying for capacity in the meantime.",
   },
 ];
 

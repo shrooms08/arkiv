@@ -84,7 +84,7 @@ fuzz across twelve orders of magnitude of reserve size.
 the faucet, mint, redeem. The assets there are **mocks**, and the app says so on
 every page.
 
-All 23 contracts are deployed and **verified on Sourcify**, including the five
+All 24 contracts are deployed and **verified on Sourcify**, including the six
 per-basket `Basket` contracts that actually hold the funds. Every address lives
 in [`deployments/xlayer-testnet.json`](deployments/xlayer-testnet.json), written
 from the broadcast artefact and the chain rather than typed, and read directly by
@@ -101,16 +101,17 @@ the frontend — so a clone resolves the same addresses the live site uses.
 | Basket, SCRATE | [`0x8964db9f1FCC6D86F34600AF40D844C715971D27`](https://www.oklink.com/xlayer-test/address/0x8964db9f1FCC6D86F34600AF40D844C715971D27) |
 | Basket, ATTENTION | [`0x6a232080E2Eb3C236F866fA92c35b246D2C86192`](https://www.oklink.com/xlayer-test/address/0x6a232080E2Eb3C236F866fA92c35b246D2C86192) |
 | Basket, EDGEAI | [`0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C`](https://www.oklink.com/xlayer-test/address/0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C) |
+| Basket, CAPEXPAY | [`0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d`](https://www.oklink.com/xlayer-test/address/0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d) |
 
 The 14 mock wrappers are in the manifest. Sourcify source for any of them:
 `https://repo.sourcify.dev/1952/<address>`.
 
 Each basket was minted into with $500 of mock USDG and half redeemed during the
 deploy, so every contract listed has demonstrably worked rather than merely
-compiled. The mint fee is live at 30 bps: those five mints booked $7.50 of fee,
-split $3.75 to the curator and $3.75 to the protocol.
+compiled. The mint fee is live at 30 bps: those six mints booked $9.00 of fee,
+split $4.50 to the curator and $4.50 to the protocol.
 
-**The curator on all five baskets is the deployer.** That is a testnet artefact
+**The curator on all six baskets is the deployer.** That is a testnet artefact
 of seeding the archive from a script, not a claim about how curation works. On a
 real deployment the curator is whoever calls `createBasket`.
 

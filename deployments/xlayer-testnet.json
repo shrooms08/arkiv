@@ -31,7 +31,8 @@
     "Basket:STICKYINF": "0x2100153203d303B82e6Ec21BDeD4bb32E455F789",
     "Basket:SCRATE": "0x8964db9f1FCC6D86F34600AF40D844C715971D27",
     "Basket:ATTENTION": "0x6a232080E2Eb3C236F866fA92c35b246D2C86192",
-    "Basket:EDGEAI": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C"
+    "Basket:EDGEAI": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C",
+    "Basket:CAPEXPAY": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d"
   },
   "assets": {
     "GLDx": "0x7F778ce3b6618bd5BC071A99bc25Aaca81bb6C71",
@@ -74,6 +75,11 @@
       "symbol": "EDGEAI",
       "name": "On-Device Inference: Value Shifts from Cloud to Edge",
       "address": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C"
+    },
+    {
+      "symbol": "CAPEXPAY",
+      "name": "AI Capex Reckoning: Seat-Licence Advantage",
+      "address": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d"
     }
   ],
   "transactions": {
