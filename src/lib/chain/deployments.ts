@@ -33,6 +33,12 @@ export interface Deployment {
   assets: Record<string, Address>;
 }
 
+export interface ManifestBasket {
+  symbol: string;
+  name: string;
+  address: string;
+}
+
 interface Manifest {
   chainId: number;
   status: string;
@@ -40,6 +46,7 @@ interface Manifest {
   usesMockAssets: boolean;
   contracts: Record<string, string | null>;
   assets: Record<string, string>;
+  baskets?: ManifestBasket[];
 }
 
 function build(m: Manifest): Deployment | undefined {
@@ -88,4 +95,31 @@ export function symbolFor(deployment: Deployment, wrapper: Address): string | un
     if (address.toLowerCase() === target) return symbol;
   }
   return undefined;
+}
+
+/**
+ * Baskets in on-chain creation order, from the committed manifest.
+ *
+ * Serial numbers are the registry index, so they have to come from creation
+ * order rather than from anything the underwriting record knows about itself.
+ * Reading the manifest keeps that mapping available to server components
+ * without a chain call.
+ */
+const MANIFEST_BASKETS: ManifestBasket[] = (
+  (testnetManifest as Manifest).baskets ?? []
+) as ManifestBasket[];
+
+/** 1-based registry index for a ticker, or undefined if it is not on chain. */
+export function basketIndexFor(symbol: string): number | undefined {
+  const i = MANIFEST_BASKETS.findIndex(
+    (b) => b.symbol.toLowerCase() === symbol.toLowerCase(),
+  );
+  return i === -1 ? undefined : i + 1;
+}
+
+/** Deployed basket address for a ticker, if it has been created. */
+export function basketAddressFor(symbol: string): string | undefined {
+  return MANIFEST_BASKETS.find(
+    (b) => b.symbol.toLowerCase() === symbol.toLowerCase(),
+  )?.address;
 }

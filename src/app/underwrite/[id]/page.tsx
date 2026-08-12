@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ROLE_LABEL, assetBySymbol } from "@/config/assets";
+import { AllocationRibbon, AssetRow, Badge, FalsifierBlock, SerialNumber, type RibbonSegment } from "@ds";
+import { AddressChip } from "@/components/AddressChip";
 import { MintPanel } from "@/components/MintPanel";
 import { WrapperDisclosure } from "@/components/WrapperDisclosure";
+import { assetBySymbol } from "@/config/assets";
+import { basketIndexFor } from "@/lib/chain/deployments";
+import { dsRole } from "@/lib/ui/roles";
 import { findRecord } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
@@ -22,59 +26,91 @@ export default async function UnderwritePage({
     .filter((h) => assetBySymbol(h.symbol)?.role === "core")
     .reduce((a, h) => a + h.weightBps, 0);
 
-  return (
-    <main className="page-underwrite">
-      <h1 className="thesis-title">{t.title}</h1>
-      <p className="muted thesis-meta">
-        <span className="thesis-ticker">{t.ticker}</span> ·{" "}
-        <span className="thesis-confidence">confidence: {t.confidence}</span> ·{" "}
-        <span className="thesis-legs">{t.holdings.length} holdings</span> ·{" "}
-        <span className="thesis-core">{coreBps / 100}% in liquidity anchors</span>
-      </p>
+  const segments: RibbonSegment[] = t.holdings.map((h) => ({
+    id: h.symbol,
+    label: h.symbol,
+    weightBps: h.weightBps,
+    isPrimary: h.symbol === t.primaryExpression,
+  }));
 
-      <section className="thesis-summary">
-        <h2>The thesis</h2>
-        <p>{t.summary}</p>
-        <blockquote className="thesis-original muted">{record.input}</blockquote>
+  const serial = basketIndexFor(t.ticker) ?? 0;
+
+  return (
+    <main className="app-main page-underwrite">
+      <header className="underwrite-header">
+        <div className="app-meta-row">
+          <Badge tone="structure">Underwritten</Badge>
+          {serial > 0 && <SerialNumber index={serial} emphasis />}
+          {serial > 0 && <span className="app-meta-sep" aria-hidden="true" />}
+          <span className="app-mono-meta thesis-ticker">{t.ticker}</span>
+          <span className="app-meta-sep" aria-hidden="true" />
+          <span className="app-mono-meta thesis-confidence">confidence: {t.confidence}</span>
+          <span className="app-meta-sep" aria-hidden="true" />
+          <span className="app-mono-meta thesis-legs">{t.holdings.length} holdings</span>
+          <span className="app-meta-sep" aria-hidden="true" />
+          <span className="app-mono-meta thesis-core">
+            {coreBps / 100}% in liquidity anchors
+          </span>
+          <span className="app-meta-sep" aria-hidden="true" />
+          <span className="app-mono-meta">hash {record.thesisHash}</span>
+        </div>
+
+        <h1 className="app-display-h1 thesis-title">{t.title}</h1>
+
+        <div className="app-panel thesis-summary">
+          <span className="app-label">The thesis</span>
+          <p className="thesis-summary__text">{t.summary}</p>
+        </div>
+
+        <div className="app-panel thesis-original-panel">
+          <span className="app-label">As written</span>
+          <blockquote className="thesis-original">{record.input}</blockquote>
+        </div>
+      </header>
+
+      <section className="underwrite-ribbon">
+        <AllocationRibbon
+          segments={segments}
+          primaryCaption={`${t.ticker} — declared allocation`}
+        />
       </section>
 
       <section className="thesis-holdings">
-        <h2>Holdings</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th className="numeric">Weight</th>
-              <th>Role</th>
-              <th>Why</th>
-            </tr>
-          </thead>
-          <tbody>
-            {t.holdings.map((h) => {
-              const asset = assetBySymbol(h.symbol);
-              const isPrimary = h.symbol === t.primaryExpression;
-              return (
-                <tr key={h.symbol} className={isPrimary ? "holding holding-primary" : "holding"}>
-                  <td>
-                    <strong>{h.symbol}</strong>
-                    <br />
-                    <span className="muted">{asset?.label}</span>
-                    {isPrimary && (
-                      <>
-                        <br />
-                        <span className="primary-badge">Primary expression</span>
-                      </>
-                    )}
-                  </td>
-                  <td className="numeric">{h.weightBps / 100}%</td>
-                  <td className="muted">{asset ? ROLE_LABEL[asset.role] : "—"}</td>
-                  <td>{h.rationale}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <p className="muted">
+        <div className="app-rule-heading">
+          <h2>Holdings</h2>
+          <span className="app-note">
+            {t.holdings.length} legs · weights sum to 10000 bps
+          </span>
+        </div>
+
+        {t.holdings.map((h) => {
+          const asset = assetBySymbol(h.symbol);
+          const isPrimary = h.symbol === t.primaryExpression;
+          return (
+            <div
+              key={h.symbol}
+              className={isPrimary ? "holding holding-primary" : "holding"}
+            >
+              <AssetRow
+                symbol={h.symbol}
+                name={asset?.label ?? ""}
+                address={asset?.wrapper}
+                weightBps={h.weightBps}
+                role={dsRole(asset?.role)}
+                isPrimaryExpression={isPrimary}
+              />
+              <div className="holding__why">
+                <p className="holding__rationale">{h.rationale}</p>
+                <div className="app-meta-row">
+                  <span className="app-label">Wrapper</span>
+                  <AddressChip address={asset?.wrapper} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <p className="app-prose">
           &ldquo;Liquidity anchor&rdquo; and &ldquo;thesis expression&rdquo; describe pool depth,
           not investment style &mdash; anchors sit in the deepest USDG pools, which is what
           keeps mint slippage low.
@@ -82,17 +118,20 @@ export default async function UnderwritePage({
       </section>
 
       <section className="thesis-falsifier">
-        <h2>How you will know if this is wrong</h2>
-        <dl>
-          <dt>Claim</dt>
-          <dd className="falsifier-claim">{t.falsifier.claim}</dd>
-          <dt>What to watch</dt>
-          <dd className="falsifier-observable">{t.falsifier.observable}</dd>
-          <dt>What would break it</dt>
-          <dd className="falsifier-breach">{t.falsifier.breachCondition}</dd>
-          <dt>By when</dt>
-          <dd className="falsifier-horizon">{t.falsifier.horizon}</dd>
-        </dl>
+        <div className="app-rule-heading app-rule-heading--emphasis">
+          <h2>What would prove this wrong</h2>
+          <span className="app-note">
+            recorded on-chain with the thesis · cannot be edited after filing
+          </span>
+        </div>
+        <FalsifierBlock
+          index={serial}
+          claim={t.falsifier.claim}
+          observable={t.falsifier.observable}
+          breachCondition={t.falsifier.breachCondition}
+          horizon={t.falsifier.horizon}
+          progress={0}
+        />
       </section>
 
       {/* Rendered by the page, not by MintPanel: the disclosure must not be able
@@ -102,8 +141,10 @@ export default async function UnderwritePage({
       <MintPanel thesis={t} thesisHash={record.thesisHash} />
 
       <section className="thesis-risks">
-        <h2>Risks</h2>
-        <ul>
+        <div className="app-rule-heading">
+          <h2>Risks</h2>
+        </div>
+        <ul className="risk-list">
           <li>
             <strong>This is not investment advice.</strong> The underwriter is a language model
             with no market data and no ability to verify its own claims. It can be confident
@@ -126,7 +167,7 @@ export default async function UnderwritePage({
         </ul>
       </section>
 
-      <p className="muted provenance">
+      <p className="app-note provenance">
         Underwritten by <code>{record.model}</code>, prompt <code>{record.promptVersion}</code>,
         effort <code>{record.effort}</code>, {record.attempts} attempt
         {record.attempts === 1 ? "" : "s"} · <Link href="/archive">Archive</Link>

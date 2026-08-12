@@ -2,12 +2,19 @@
 
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 
+import { Button } from "@ds";
 import { chainHasUniverse, xLayer } from "@/lib/chain/chains";
 
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+/**
+ * Wallet control for the nav's action slot.
+ *
+ * The connect / wrong-network / connected branches are unchanged — only the
+ * buttons they render come from the design system now.
+ */
 export function WalletBar() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -19,13 +26,15 @@ export function WalletBar() {
     const injected = connectors[0];
     return (
       <span className="wallet-bar">
-        <button
+        <Button
           className="wallet-connect"
+          variant="secondary"
+          size="sm"
           disabled={!injected || isPending}
           onClick={() => injected && connect({ connector: injected })}
         >
           {isPending ? "Connecting…" : "Connect wallet"}
-        </button>
+        </Button>
       </span>
     );
   }
@@ -35,20 +44,25 @@ export function WalletBar() {
   if (!chainHasUniverse(chainId)) {
     return (
       <span className="wallet-bar wallet-wrong-network">
-        <span className="muted">Wrong network</span>{" "}
-        <button className="wallet-switch" onClick={() => switchChain({ chainId: xLayer.id })}>
+        <span className="app-label">Wrong network</span>
+        <Button
+          className="wallet-switch"
+          variant="primary"
+          size="sm"
+          onClick={() => switchChain({ chainId: xLayer.id })}
+        >
           Switch to X Layer
-        </button>
+        </Button>
       </span>
     );
   }
 
   return (
     <span className="wallet-bar">
-      <span className="wallet-address">{address ? short(address) : ""}</span>{" "}
-      <button className="wallet-disconnect" onClick={() => disconnect()}>
+      <span className="wallet-address app-mono-meta">{address ? short(address) : ""}</span>
+      <Button className="wallet-disconnect" variant="ghost" size="sm" onClick={() => disconnect()}>
         Disconnect
-      </button>
+      </Button>
     </span>
   );
 }

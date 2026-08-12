@@ -1,91 +1,166 @@
-"use client";
+import Link from "next/link";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { BasketCard, type RibbonSegment } from "@ds";
+import { FaqAccordion } from "@/components/FaqAccordion";
+import { ThesisComposer } from "@/components/ThesisComposer";
+import { basketIndexFor } from "@/lib/chain/deployments";
+import { allRecords } from "@/lib/underwriting/lookup";
+
+export const dynamic = "force-dynamic";
+
+const FAQ = [
+  {
+    id: "what",
+    question: "What actually gets minted?",
+    answer:
+      "One ERC-20 share token per basket, backed by wrapped tokenized US equities held by the basket contract. The thesis text, the weights and the falsifier are written on-chain in the same transaction, so the argument and the position cannot drift apart later.",
+  },
+  {
+    id: "ai",
+    question: "What does the underwriter decide, and what does it not?",
+    answer:
+      "It chooses the legs and their weights, writes the reason for each size, and writes the falsifier — the observable and the breach condition. It does not choose your thesis, and it cannot change a filed basket afterwards. If it is wrong, the falsifier is the thing that says so.",
+  },
+  {
+    id: "falsifier",
+    question: "What happens when a falsifier is breached?",
+    answer:
+      "The basket is marked breached in the archive and keeps its serial number. Nothing is liquidated automatically — a breach is a verdict on the claim, not a stop-loss. The record stays visible, which is the point of filing it.",
+  },
+  {
+    id: "wrappers",
+    question: "Who controls the underlying wrappers?",
+    answer:
+      "A third-party issuer, not Arkiv. The wrapper contracts are upgradeable by a 2-of-3 multisig whose address is linked on every basket page. An upgrade can change how a wrapper redeems, and it is the largest non-market risk in the product.",
+  },
+  {
+    id: "testnet",
+    question: "Is any of this real money?",
+    answer:
+      "No. Arkiv is live on X Layer testnet. Every asset is a mock, price impact is not simulated, and the faucet hands out test USDG inside the mint flow. Nothing here is a security or investment advice.",
+  },
+];
+
+const PROMISES = [
+  {
+    title: "A weight is an argument",
+    body: "Every holding carries a written reason for its size, not a category label.",
+  },
+  {
+    title: "A claim you can lose",
+    body: "Each thesis files an observable and a breach condition before anything is minted.",
+  },
+  {
+    title: "One transaction",
+    body: "The legs are bought, wrapped and recorded in a single mint on X Layer.",
+  },
+  {
+    title: "It stays on the shelf",
+    body: "A thesis keeps its serial number after it resolves, including when it was wrong.",
+  },
+];
 
 export default function HomePage() {
-  const router = useRouter();
-  const [thesis, setThesis] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [violations, setViolations] = useState<{ rule: string; detail: string }[]>([]);
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setPending(true);
-    setError(null);
-    setViolations([]);
-
-    try {
-      const res = await fetch("/api/underwrite", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ thesis }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Underwriting failed.");
-        setViolations(data.violations ?? []);
-        return;
-      }
-      router.push(`/underwrite/${data.thesisHash}`);
-    } catch {
-      setError("Could not reach the underwriter.");
-    } finally {
-      setPending(false);
-    }
-  }
+  // Server-side read of the reproducibility log and fixtures. No chain call is
+  // made here — serials come from the committed deployment manifest, which
+  // records registry creation order.
+  const records = allRecords();
 
   return (
-    <main className="page-home">
-      <h1>What do you believe?</h1>
-      <p className="muted">
-        Write it in your own words. Arkiv turns it into a basket you can hold, and a
-        falsifier that will tell you later whether you were right.
-      </p>
-
-      <form className="thesis-form" onSubmit={submit}>
-        <label htmlFor="thesis">Your thesis</label>
-        <textarea
-          id="thesis"
-          className="thesis-input"
-          rows={7}
-          value={thesis}
-          minLength={20}
-          maxLength={2000}
-          required
-          placeholder="e.g. AI infrastructure spending keeps compounding, and the constraint is power and packaging capacity rather than demand…"
-          onChange={(e) => setThesis(e.target.value)}
-        />
-        <p className="muted thesis-counter">{thesis.length} / 2000</p>
-
-        <button className="thesis-submit" type="submit" disabled={pending || thesis.length < 20}>
-          {pending ? "Underwriting…" : "Underwrite"}
-        </button>
-      </form>
-
-      {error && (
-        <div className="error underwrite-error" role="alert">
-          <p>{error}</p>
-          {violations.length > 0 && (
-            <>
-              <p className="muted">
-                The basket broke these rules twice and was rejected rather than repaired:
-              </p>
-              <ul>
-                {violations.map((v) => (
-                  <li key={v.rule + v.detail}>
-                    <strong>{v.rule}</strong> — {v.detail}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+    <main className="app-main page-home">
+      <section className="home-hero">
+        <div className="home-hero__copy">
+          <h1 className="app-display-h1">
+            Write a thesis. Get a portfolio that says what would prove it wrong.
+          </h1>
+          <p className="app-lede">
+            Describe what you believe in plain English. An underwriter turns it into a
+            weighted basket of tokenized US equities, argues for the size of every
+            holding, and files the condition that would prove you wrong — permanently,
+            with a serial number.
+          </p>
+          <div className="home-stats">
+            <span className="home-stat">
+              <span className="home-stat__value">{records.length}</span>
+              <span className="app-label">theses filed</span>
+            </span>
+            <span className="home-stat">
+              <span className="home-stat__value">
+                {records.filter((r) => basketIndexFor(r.thesis.ticker)).length}
+              </span>
+              <span className="app-label">minted on chain</span>
+            </span>
+            <span className="home-stat">
+              <span className="home-stat__value">
+                {new Set(records.map((r) => r.thesis.primaryExpression)).size}
+              </span>
+              <span className="app-label">distinct expressions</span>
+            </span>
+          </div>
         </div>
+
+        <ThesisComposer />
+      </section>
+
+      {records.length > 0 && (
+        <section className="home-section">
+          <div className="app-rule-heading app-rule-heading--emphasis">
+            <h2>Already on file</h2>
+            <Link className="app-note home-archive-link" href="/archive">
+              Open the archive
+            </Link>
+          </div>
+
+          <div className="ark-cardgrid">
+            {records.map((r) => {
+              const t = r.thesis;
+              const total = t.holdings.reduce((a, h) => a + h.weightBps, 0) || 1;
+              const segments: RibbonSegment[] = t.holdings.map((h) => ({
+                id: h.symbol,
+                label: h.symbol,
+                weightBps: Math.round((h.weightBps / total) * 10000),
+                isPrimary: h.symbol === t.primaryExpression,
+              }));
+              return (
+                <BasketCard
+                  key={r.thesisHash}
+                  index={basketIndexFor(t.ticker) ?? 0}
+                  name={t.title}
+                  ticker={t.ticker}
+                  thesis={t.summary}
+                  symbols={t.holdings.map((h) => h.symbol)}
+                  primaryExpression={t.primaryExpression}
+                  horizon={t.falsifier.horizon}
+                  confidence={t.confidence}
+                  segments={segments}
+                  href={`/underwrite/${r.thesisHash}`}
+                />
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      <p className="muted">
+      <section className="home-promises">
+        {PROMISES.map((p) => (
+          <div className="home-promise" key={p.title}>
+            <h3 className="home-promise__title">{p.title}</h3>
+            <p className="app-prose">{p.body}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="home-faq">
+        <div className="home-faq__intro">
+          <h2 className="app-display-h1 home-faq__heading">Questions</h2>
+          <p className="app-prose">The ones worth answering before you write anything.</p>
+        </div>
+        <div className="home-faq__body">
+          <FaqAccordion items={FAQ} />
+        </div>
+      </section>
+
+      <p className="app-prose">
         Not investment advice. The underwriter has no market data and cannot verify its
         own claims — see the{" "}
         <a href="https://github.com/arkiv/docs/UNDERWRITING.md">published rubric</a>.

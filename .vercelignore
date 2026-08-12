@@ -7,3 +7,12 @@
 contracts/
 logs/
 broadcast/
+
+# Design-system working state. The app imports only tokens/, components/ and
+# fonts/; these are build/sync artefacts. .ds-sync alone is 46MB, and
+# .vercelignore replaces .gitignore for uploads rather than adding to it, so
+# without these lines they would ship.
+design-system/.ds-sync/
+design-system/ds-bundle/
+design-system/dist/
+design-system/.design-sync/

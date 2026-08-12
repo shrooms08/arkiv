@@ -20,6 +20,18 @@ export interface BasketCardProps {
   confidence?: "low" | "medium" | "high";
   /** Optional ribbon in the card footer. */
   segments?: RibbonSegment[];
+  /**
+   * Cover image URL. Rendered at the top of the card at a fixed 11:6 ratio so a
+   * grid of cards keeps one baseline regardless of what art each one carries.
+   * Omit it and the card renders without a cover rather than reserving an empty
+   * band — a blank slot reads as a failed image, which is worse than no image.
+   */
+  cover?: string;
+  /**
+   * Alt text for `cover`. Defaults to naming the basket, which is the useful
+   * thing to hear: the art is decorative, the record it belongs to is not.
+   */
+  coverAlt?: string;
   href?: string;
   onClick?: () => void;
   className?: string;
@@ -45,6 +57,8 @@ export function BasketCard({
   horizon = "",
   confidence,
   segments,
+  cover,
+  coverAlt,
   href,
   onClick,
   className = "",
@@ -55,6 +69,12 @@ export function BasketCard({
 
   const content = (
     <>
+      {cover && (
+        <div className="ark-basketcard__cover">
+          <img src={cover} alt={coverAlt ?? (name ? `${name} — cover` : "Basket cover")} />
+        </div>
+      )}
+
       <CardHeader>
         <span className="ark-basketcard__ident">
           <h3 className="ark-basketcard__name">{name}</h3>

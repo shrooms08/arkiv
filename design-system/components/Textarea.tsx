@@ -1,3 +1,10 @@
+"use client";
+
+// Interactive: this component holds state or forwards a ref, so it has to run
+// on the client. Without the directive a React Server Component that renders it
+// fails at request time with "useState is not a function" — a runtime 500, not
+// a build error, so it is only visible once a page actually renders.
+
 import * as React from "react";
 
 export interface TextareaProps

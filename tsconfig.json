@@ -26,7 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ]
+      ],
+      "@ds": ["./design-system/index.ts"],
+      "@ds/*": ["./design-system/*"]
     },
     "allowJs": true
   },
@@ -34,6 +36,10 @@
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "design-system/index.ts",
+    "design-system/tokens/**/*.ts",
+    "design-system/components/**/*.tsx",
+    "design-system/fixtures/**/*.ts",
     "scripts/**/*.ts",
     "test/**/*.ts",
     ".next/types/**/*.ts"

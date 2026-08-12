@@ -14,11 +14,11 @@ export function NetworkBanner() {
   if (!chainUsesMocks(chainId)) return null;
 
   return (
-    <aside className="network-banner network-banner-testnet">
-      <strong>Testnet — these assets are mocks.</strong> The tokens here are
-      stand-ins with fixed prices and a public faucet, deployed so the mechanism
-      can be used without holding anything real. On X Layer mainnet, Arkiv holds
-      genuine xStocks issued by Backed against real USDG liquidity.
-    </aside>
+    <div className="app-testnet-strip network-banner network-banner-testnet" role="status">
+      <span className="app-testnet-dot" aria-hidden="true" />
+      <span>
+        X Layer testnet · every asset here is a mock · nothing on this page is a security
+      </span>
+    </div>
   );
 }

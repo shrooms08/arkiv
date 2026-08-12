@@ -1107,3 +1107,20 @@
   --ribbon-height: 1.75rem;          /* 28px */
   --ribbon-height-primary: 2.25rem;  /* 36px */
 }
+
+/* BasketCard cover. Fixed 11:6 ratio so a grid of cards shares one baseline
+   whatever art each carries; the image is clipped rather than letterboxed. The
+   card's own radius is inherited on the top corners only, because the cover
+   sits flush against the card edge. */
+.ark-basketcard__cover {
+  border-start-start-radius: var(--radius-lg);
+  border-start-end-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+}
+.ark-basketcard__cover img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 11 / 6;
+  object-fit: cover;
+}

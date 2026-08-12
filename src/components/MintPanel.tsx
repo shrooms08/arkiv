@@ -6,6 +6,7 @@ import { useAccount, useChainId, usePublicClient, useWriteContract } from "wagmi
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useConfig } from "wagmi";
 
+import { Button } from "@ds";
 import { USDG, assetBySymbol } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
 import { chainHasUniverse } from "@/lib/chain/chains";
@@ -17,6 +18,8 @@ import { explainRevert } from "@/lib/chain/errors";
 import type { Thesis } from "@/lib/underwriting/schema";
 
 type Step = "idle" | "creating" | "approving" | "minting" | "done" | "error";
+
+const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 
 export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: string }) {
   const { address, isConnected } = useAccount();
@@ -76,8 +79,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
 
   if (!deployment) {
     return (
-      <section className="mint-panel mint-unavailable">
-        <h2>Mint</h2>
+      <section className="app-panel mint-panel mint-unavailable">
+        <h2 className="mint-panel__heading">Mint</h2>
         <p className="unavailable">
           Arkiv is not deployed on this network, so there is nothing to mint into.
         </p>
@@ -174,13 +177,18 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   const busy = step === "creating" || step === "approving" || step === "minting";
 
   return (
-    <section className="mint-panel">
-      <h2>Mint</h2>
+    <section className="app-panel app-panel--raised mint-panel">
+      <div className="app-rule-heading" style={{ borderBlockEnd: "none", paddingBlockEnd: 0 }}>
+        <h2 className="mint-panel__heading">Mint</h2>
+        <span className="app-label">testnet USDG</span>
+      </div>
 
       <Faucet />
 
       <fieldset className="mint-controls">
-        <label htmlFor="amount">Amount (USDG)</label>
+        <label className="app-label" htmlFor="amount">
+          Amount (USDG)
+        </label>
         <input
           id="amount"
           className="mint-amount"
@@ -189,20 +197,34 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
           onChange={(e) => setAmount(e.target.value)}
         />
 
-        <label htmlFor="slippage">
-          Slippage tolerance: {(slippageBps / 100).toFixed(2)}%
-        </label>
-        <input
-          id="slippage"
-          className="mint-slippage"
-          type="range"
-          min={10}
-          max={500}
-          step={10}
-          value={slippageBps}
-          onChange={(e) => setSlippageBps(Number(e.target.value))}
-        />
-        <p className="muted">
+        <span className="app-label" id="slippage-label">
+          Max slippage
+        </span>
+        <div className="mint-slippage-row" role="group" aria-labelledby="slippage-label">
+          {SLIPPAGE_PRESETS.map((bps) => (
+            <button
+              key={bps}
+              type="button"
+              className={`mint-slippage-preset${slippageBps === bps ? " is-selected" : ""}`}
+              aria-pressed={slippageBps === bps}
+              onClick={() => setSlippageBps(bps)}
+            >
+              {(bps / 100).toFixed(bps < 100 ? 1 : 0)}%
+            </button>
+          ))}
+          <input
+            id="slippage"
+            className="mint-slippage"
+            type="range"
+            min={10}
+            max={500}
+            step={10}
+            value={slippageBps}
+            onChange={(e) => setSlippageBps(Number(e.target.value))}
+            aria-label={`Slippage tolerance ${(slippageBps / 100).toFixed(2)} percent`}
+          />
+        </div>
+        <p className="app-prose">
           Sets the per-leg <code>minAmountsOut</code> floor and the{" "}
           <code>minSharesOut</code> floor. Both are enforced on-chain against
           measured balances — the share floor matters most, because your share
@@ -210,61 +232,62 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
         </p>
       </fieldset>
 
-      <table className="mint-quotes">
-        <thead>
-          <tr>
-            <th>Leg</th>
-            <th className="numeric">USDG in</th>
-            <th className="numeric">Price impact</th>
-          </tr>
-        </thead>
-        <tbody>
-          {legs.map((leg) => {
-            const q = quotes?.find((x) => x.symbol === leg.symbol);
-            return (
-              <tr key={leg.symbol} className="mint-quote-row">
-                <td>{leg.symbol}</td>
-                <td className="numeric">{formatUnits(leg.usdgIn, USDG.decimals)}</td>
-                <td className="numeric">
-                  {!deployment.quoter ? (
-                    <span className="unavailable" title="Fixed-rate mock adapter — no pool depth to measure against.">
-                      n/a (mock)
-                    </span>
-                  ) : !quotes ? (
-                    <span className="muted">quoting…</span>
-                  ) : q?.impactBps === null || q === undefined ? (
-                    <span className="unavailable">unavailable</span>
-                  ) : (
-                    `${q.impactBps.toFixed(0)} bp`
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-          <tr className="mint-quote-blended">
-            <th>Blended</th>
-            <th className="numeric">{formatUnits(usdgIn, USDG.decimals)}</th>
-            <th className="numeric">
-              {!deployment.quoter ? (
-                <span className="unavailable">n/a (mock)</span>
-              ) : blendedBps === null ? (
-                <span className="unavailable">unavailable</span>
-              ) : (
-                `${blendedBps.toFixed(0)} bp`
-              )}
-            </th>
-          </tr>
-        </tbody>
-      </table>
+      <div className="mint-quotes">
+        <div className="mint-quotes__head">
+          <span className="mint-col-leg">Leg</span>
+          <span className="mint-col-num">USDG in</span>
+          <span className="mint-col-num">Price impact</span>
+        </div>
+        {legs.map((leg) => {
+          const q = quotes?.find((x) => x.symbol === leg.symbol);
+          return (
+            <div key={leg.symbol} className="mint-quotes__row mint-quote-row">
+              <span className="mint-col-leg">{leg.symbol}</span>
+              <span className="mint-col-num">{formatUnits(leg.usdgIn, USDG.decimals)}</span>
+              <span className="mint-col-num">
+                {!deployment.quoter ? (
+                  <span
+                    className="unavailable"
+                    title="Fixed-rate mock adapter — no pool depth to measure against."
+                  >
+                    n/a (mock)
+                  </span>
+                ) : !quotes ? (
+                  <span className="unavailable">quoting…</span>
+                ) : q?.impactBps === null || q === undefined ? (
+                  <span className="unavailable">unavailable</span>
+                ) : (
+                  `${q.impactBps.toFixed(0)} bp`
+                )}
+              </span>
+            </div>
+          );
+        })}
+        <div className="mint-quotes__row mint-quote-blended">
+          <span className="mint-col-leg">Blended</span>
+          <span className="mint-col-num">{formatUnits(usdgIn, USDG.decimals)}</span>
+          <span className="mint-col-num">
+            {!deployment.quoter ? (
+              <span className="unavailable">n/a (mock)</span>
+            ) : blendedBps === null ? (
+              <span className="unavailable">unavailable</span>
+            ) : (
+              `${blendedBps.toFixed(0)} bp`
+            )}
+          </span>
+        </div>
+      </div>
 
-      {!isConnected && <p className="muted">Connect a wallet to mint.</p>}
+      {!isConnected && <p className="app-prose">Connect a wallet to mint.</p>}
       {isConnected && wrongNetwork && (
         <p className="unavailable">Switch to X Layer to mint.</p>
       )}
 
-      <button
+      <Button
         className="mint-submit"
+        size="lg"
         disabled={!isConnected || wrongNetwork || busy || usdgIn === 0n}
+        loading={busy}
         onClick={run}
       >
         {step === "creating"
@@ -273,8 +296,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
             ? "Approving USDG…"
             : step === "minting"
               ? "Minting…"
-              : "Create basket and mint"}
-      </button>
+              : `Mint ${thesis.ticker}`}
+      </Button>
 
       {step === "done" && basketAddress && (
         <p className="mint-success">
@@ -282,8 +305,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
         </p>
       )}
       {step === "error" && (
-        <div className="error mint-error" role="alert">
-          <p>{message}</p>
+        <div className="app-error mint-error" role="alert">
+          <p style={{ margin: 0 }}>{message}</p>
         </div>
       )}
       {void tokens}

@@ -8,6 +8,7 @@ const SAFE = "0x49754062E35f7591B93cc4F9915965be89643a65";
 export function WrapperDisclosure() {
   return (
     <aside className="disclosure disclosure-upgradeable">
+      <span className="app-label">Wrapper upgrade authority · 2-of-3 multisig</span>{" "}
       <strong>The underlying tokens are upgradeable.</strong>{" "}
       Every xStocks wrapper this basket holds is a proxy, and all of them share one
       admin owned by a <strong>2-of-3 multisig</strong>. Two of three keyholders can

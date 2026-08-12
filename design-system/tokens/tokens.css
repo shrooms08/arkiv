@@ -50,7 +50,7 @@
   --container-prose: 42rem;    /* 672px  — measured, both properties */
   --grid-gap: var(--space-6);  /* 24px, measured 3-col card grid */
   --grid-gap-tight: var(--space-3); /* 12px, measured holdings grid */
-  --grid-cols: 3;              /* measured: 389.33px x 3 within 1216px */
+  --grid-cols: 3;              /* @kind other */ /* measured: 389.33px x 3 within 1216px */
 
   /* ---------------------------------------------------------------
    * Breakpoints (measured @media min-widths; all five stock Tailwind)
@@ -139,13 +139,13 @@
    * Motion — measured durations and easings
    * 0.15s (209 uses), 0.3s (43), 0.5s (38), 0.2s (1)
    * ------------------------------------------------------------- */
-  --duration-instant: 0.1s;
-  --duration-fast: 0.15s;    /* measured default */
-  --duration-base: 0.2s;
-  --duration-slow: 0.3s;
-  --duration-slower: 0.5s;
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);  /* measured, dominant */
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);         /* measured */
+  --duration-instant: 0.1s;  /* @kind other */
+  --duration-fast: 0.15s;    /* @kind other */ /* measured default */
+  --duration-base: 0.2s;     /* @kind other */
+  --duration-slow: 0.3s;     /* @kind other */
+  --duration-slower: 0.5s;   /* @kind other */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);  /* @kind other */ /* measured, dominant */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);         /* @kind other */ /* measured */
   --transition-base: var(--duration-fast) var(--ease-standard);
 
   /* ---------------------------------------------------------------

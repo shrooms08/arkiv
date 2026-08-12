@@ -5,6 +5,7 @@ import { formatUnits } from "viem";
 import { useAccount, useChainId, useConfig, useReadContract, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 
+import { Button } from "@ds";
 import { erc20Abi } from "@/lib/chain/abis";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
@@ -59,29 +60,36 @@ export function Faucet() {
 
   return (
     <aside className="faucet">
-      <p>
-        <strong>Need testnet funds?</strong>{" "}
+      <div className="faucet__head">
+        <span className="app-label">Need testnet funds?</span>
         {balance !== undefined ? (
-          <span className="faucet-balance">
-            You hold ${Number(formatUnits(balance as bigint, 6)).toLocaleString()} mUSDG.
+          <span className="faucet-balance app-mono-meta">
+            You hold ${Number(formatUnits(balance as bigint, 6)).toLocaleString()} mUSDG
           </span>
         ) : null}
-      </p>
-      <p>
-        <button className="faucet-claim" disabled={!isConnected || pending} onClick={claim}>
+      </div>
+      <div className="app-meta-row">
+        <Button
+          className="faucet-claim"
+          variant="secondary"
+          size="sm"
+          disabled={!isConnected || pending}
+          loading={pending}
+          onClick={claim}
+        >
           {pending ? "Claiming…" : "Get 10,000 test USDG"}
-        </button>{" "}
+        </Button>
         <a
-          className="faucet-gas-link"
+          className="faucet-gas-link app-note"
           href="https://www.okx.com/xlayer/faucet"
           target="_blank"
           rel="noreferrer"
         >
           Need OKB for gas?
         </a>
-      </p>
+      </div>
       {error ? (
-        <p className="error faucet-error" role="alert">
+        <p className="app-error faucet-error" role="alert">
           {error}
         </p>
       ) : null}
