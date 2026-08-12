@@ -18,6 +18,7 @@ import { CoverImage } from "@/components/CoverImage";
 import { InvestPanel } from "@/components/InvestPanel";
 import { USDG, assetByAddress, assetBySymbol } from "@/config/assets";
 import { explainRevert } from "@/lib/chain/errors";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor, symbolFor } from "@/lib/chain/deployments";
 import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
 import { fetchCurator, type CuratorRecord } from "@/lib/chain/curator";
@@ -63,10 +64,10 @@ export function BasketView({
   address: Address;
   record?: BasketRecord;
 }) {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const chainId = useChainId();
   const { address: account } = useAccount();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
 
   const [state, setState] = useState<BasketState | null>(null);
   const [prices, setPrices] = useState<Map<Address, LegExitValue> | null>(null);

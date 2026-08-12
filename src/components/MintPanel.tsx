@@ -9,10 +9,12 @@ import { useConfig } from "wagmi";
 import { Button } from "@ds";
 import { USDG, assetBySymbol } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
-import { chainHasUniverse } from "@/lib/chain/chains";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor, wrapperFor } from "@/lib/chain/deployments";
+import { useChainGuard } from "@/lib/chain/guard";
 import { fetchMintQuotes, withSlippage, type LegQuote } from "@/lib/chain/quoter";
 import { Faucet } from "./Faucet";
+import { SwitchNetwork } from "./SwitchNetwork";
 import { splitFor } from "@/lib/chain/impact";
 import { explainRevert } from "@/lib/chain/errors";
 import type { Thesis } from "@/lib/underwriting/schema";
@@ -24,11 +26,12 @@ const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: string }) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const client = usePublicClient();
+  const guard = useChainGuard();
+  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const config = useConfig();
   const { writeContractAsync } = useWriteContract();
 
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
 
   // The fee is read from the registry, never assumed. It is owner-settable
   // within a hard cap, so a hardcoded 30 bps here would eventually size the
@@ -37,6 +40,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
+    chainId: ACTIVE_CHAIN.id,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const feeBps = typeof feeBpsRaw === "bigint" ? feeBpsRaw : 0n;
@@ -115,6 +119,9 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   });
 
   async function run() {
+    // The three-transaction flow refuses at its own entry point too, so a
+    // wallet that changes chain between render and click cannot start it.
+    if (!guard.ok) return;
     if (!client || !address) return;
     setMessage(null);
 
@@ -133,7 +140,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
           `arkiv:${thesisHash}`,
         ],
       });
-      const receipt = await waitForTransactionReceipt(config, { hash: createHash });
+      const receipt = await waitForTransactionReceipt(config, { hash: createHash, chainId: ACTIVE_CHAIN.id });
 
       const created = await client.readContract({
         address: deployment!.arkiv,
@@ -160,7 +167,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
         functionName: "approve",
         args: [basket, usdgIn],
       });
-      await waitForTransactionReceipt(config, { hash: approveHash });
+      await waitForTransactionReceipt(config, { hash: approveHash, chainId: ACTIVE_CHAIN.id });
 
       // 3. Mint, with floors derived from the live quotes.
       setStep("minting");
@@ -180,7 +187,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
         functionName: "mint",
         args: [usdgIn, orderedSplit, minAmountsOut, minSharesOut, address],
       });
-      await waitForTransactionReceipt(config, { hash: mintHash });
+      await waitForTransactionReceipt(config, { hash: mintHash, chainId: ACTIVE_CHAIN.id });
 
       setStep("done");
     } catch (err) {
@@ -189,7 +196,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
     }
   }
 
-  const wrongNetwork = !chainHasUniverse(chainId);
+  const wrongNetwork = guard.wrongChain;
   const busy = step === "creating" || step === "approving" || step === "minting";
 
   return (
@@ -312,14 +319,12 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
       </p>
 
       {!isConnected && <p className="app-prose">Connect a wallet to mint.</p>}
-      {isConnected && wrongNetwork && (
-        <p className="unavailable">Switch to X Layer to mint.</p>
-      )}
+      <SwitchNetwork guard={guard} action="filing this thesis on chain" />
 
       <Button
         className="mint-submit"
         size="lg"
-        disabled={!isConnected || wrongNetwork || busy || usdgIn === 0n}
+        disabled={!guard.ok || busy || usdgIn === 0n}
         loading={busy}
         onClick={run}
       >

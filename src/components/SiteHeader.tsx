@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useChainId } from "wagmi";
 
 import { ArkivMark, Badge } from "@ds";
-import { chainUsesMocks } from "@/lib/chain/chains";
+import { ACTIVE_CHAIN, chainUsesMocks } from "@/lib/chain/chains";
 import { WalletBar } from "./WalletBar";
 
 const LINKS = [
@@ -25,7 +25,7 @@ const LINKS = [
 export function SiteHeader() {
   const pathname = usePathname();
   const chainId = useChainId();
-  const network = chainUsesMocks(chainId) ? "X Layer testnet" : null;
+  const network = chainUsesMocks(ACTIVE_CHAIN.id) ? "X Layer testnet" : null;
 
   return (
     <nav className="ark ark-nav" aria-label="Primary">

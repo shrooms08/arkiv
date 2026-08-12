@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useChainId, usePublicClient } from "wagmi";
 
 import { Badge, Button, SerialNumber } from "@ds";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import {
   ARCHIVE_PAGE_SIZE,
@@ -25,9 +26,9 @@ function ageParts(createdAt: number): { value: string; unit: string } {
 }
 
 export default function ArchivePage() {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const chainId = useChainId();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
 
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [total, setTotal] = useState<number | null>(null);

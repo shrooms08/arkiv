@@ -7,7 +7,9 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { Button } from "@ds";
 import { erc20Abi } from "@/lib/chain/abis";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
+import { useChainGuard } from "@/lib/chain/guard";
 import { explainRevert } from "@/lib/chain/errors";
 
 const faucetAbi = [
@@ -23,9 +25,14 @@ const faucetAbi = [
  */
 export function Faucet() {
   const chainId = useChainId();
+  // The claim refuses and the button disables off-chain, but the prompt itself
+  // is the panel's to render: the faucet only ever appears inside MintPanel or
+  // InvestPanel, and both already show one. Two identical prompts stacked in one
+  // panel reads as a bug.
+  const guard = useChainGuard();
   const { address, isConnected } = useAccount();
   const config = useConfig();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
   const { writeContractAsync } = useWriteContract();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +42,14 @@ export function Faucet() {
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN.id,
     query: { enabled: Boolean(address && deployment?.mockUsdg) },
   });
 
   if (!deployment?.mockUsdg) return null;
 
   async function claim() {
+    if (!guard.ok) return;
     setPending(true);
     setError(null);
     try {
@@ -73,7 +82,7 @@ export function Faucet() {
           className="faucet-claim"
           variant="secondary"
           size="sm"
-          disabled={!isConnected || pending}
+          disabled={!isConnected || pending || !guard.ok}
           loading={pending}
           onClick={claim}
         >

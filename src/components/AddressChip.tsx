@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChainId } from "wagmi";
 
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 
 /**
@@ -20,7 +21,7 @@ export function AddressChip({
   explorer?: string;
 }) {
   const chainId = useChainId();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 

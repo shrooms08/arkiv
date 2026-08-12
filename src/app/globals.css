@@ -1185,3 +1185,28 @@ body {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ── Chain guard prompt ──────────────────────────────────────────── */
+.chain-guard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width-emphasis) solid var(--color-ink);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.chain-guard__text {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+.chain-guard__text strong {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.chain-guard__action {
+  width: 100%;
+}

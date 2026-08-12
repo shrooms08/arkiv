@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useChainId, usePublicClient } from "wagmi";
 
 import { Footer } from "@ds";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { fetchBasketCount } from "@/lib/chain/archive";
 
@@ -32,9 +33,9 @@ const COLUMNS = [
  * line is the archive's real extent rather than a number typed into markup.
  */
 export function SiteFooter() {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const chainId = useChainId();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
   const [count, setCount] = useState<number | undefined>(undefined);
 
   useEffect(() => {

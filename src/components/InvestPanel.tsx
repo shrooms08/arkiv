@@ -8,10 +8,12 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { Button } from "@ds";
 import { USDG } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
-import { chainHasUniverse } from "@/lib/chain/chains";
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
+import { useChainGuard } from "@/lib/chain/guard";
 import { withSlippage } from "@/lib/chain/quoter";
+import { SwitchNetwork } from "./SwitchNetwork";
 import { Faucet } from "./Faucet";
 
 type Step = "idle" | "approving" | "minting" | "done" | "error";
@@ -57,10 +59,11 @@ export function InvestPanel({
 }: InvestPanelProps) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const config = useConfig();
+  const guard = useChainGuard();
   const { writeContractAsync } = useWriteContract();
-  const deployment = deploymentFor(chainId);
+  const deployment = deploymentFor(ACTIVE_CHAIN.id);
 
   const [amount, setAmount] = useState("100");
   const [slippageBps, setSlippageBps] = useState(100);
@@ -76,12 +79,14 @@ export function InvestPanel({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
+    chainId: ACTIVE_CHAIN.id,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const { data: curatorBpsRaw } = useReadContract({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "curatorBps",
+    chainId: ACTIVE_CHAIN.id,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const { data: balanceRaw, refetch: refetchBalance } = useReadContract({
@@ -89,6 +94,7 @@ export function InvestPanel({
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN.id,
     query: { enabled: Boolean(address && deployment?.usdg) },
   });
 
@@ -153,12 +159,15 @@ export function InvestPanel({
     if (step === "done") void refetchBalance();
   }, [step, refetchBalance]);
 
-  const wrongNetwork = !chainHasUniverse(chainId);
+  const wrongNetwork = guard.wrongChain;
   const busy = step === "approving" || step === "minting";
   const overBalance = usdgIn > balance;
 
   async function mint() {
-    if (!client || !address || !deployment) return;
+    // Belt as well as braces: the control is disabled off-chain, and the call
+    // refuses anyway, so a stale render or a mid-flight wallet switch cannot
+    // put a transaction on a chain the contracts are not on.
+    if (!client || !address || !deployment || !guard.ok) return;
     setMessage(null);
     try {
       // 1. Approve exactly this mint, not an unbounded allowance.
@@ -169,7 +178,7 @@ export function InvestPanel({
         functionName: "approve",
         args: [basket, usdgIn],
       });
-      await waitForTransactionReceipt(config, { hash: approveHash });
+      await waitForTransactionReceipt(config, { hash: approveHash, chainId: ACTIVE_CHAIN.id });
 
       // 2. Mint. The split covers the POST-FEE amount and is sized to current
       // composition, which is the same shape the share maths assumes.
@@ -189,7 +198,7 @@ export function InvestPanel({
         functionName: "mint",
         args: [usdgIn, split, tokens.map(() => 0n), minSharesOut, address],
       });
-      await waitForTransactionReceipt(config, { hash: mintHash });
+      await waitForTransactionReceipt(config, { hash: mintHash, chainId: ACTIVE_CHAIN.id });
 
       setStep("done");
       onDone?.();
@@ -204,7 +213,7 @@ export function InvestPanel({
    * not on the fee, not on breach, not on any state this panel introduces. R10.
    */
   async function redeem() {
-    if (!address || shareBalance === 0n) return;
+    if (!address || shareBalance === 0n || !guard.ok) return;
     setExitMessage(null);
     setExitStep("redeeming");
     try {
@@ -317,7 +326,7 @@ export function InvestPanel({
       </p>
 
       {!isConnected && <p className="app-prose">Connect a wallet to mint.</p>}
-      {isConnected && wrongNetwork && <p className="unavailable">Switch to X Layer to mint.</p>}
+      <SwitchNetwork guard={guard} action="minting" />
       {isConnected && overBalance && (
         <p className="unavailable">Amount is above your balance.</p>
       )}
@@ -358,7 +367,7 @@ export function InvestPanel({
         <Button
           className="invest__redeem"
           variant="secondary"
-          disabled={!address || shareBalance === 0n || exitStep === "redeeming"}
+          disabled={!address || shareBalance === 0n || exitStep === "redeeming" || !guard.ok}
           loading={exitStep === "redeeming"}
           onClick={redeem}
         >

@@ -56,6 +56,47 @@ export const xLayerFork = defineChain({
 
 export const SUPPORTED_CHAINS = [xLayer, xLayerTestnet] as const;
 
+/**
+ * The chain this build is deployed against.
+ *
+ * Everything that writes must happen here and nowhere else. `SUPPORTED_CHAINS`
+ * is what wagmi is configured with, which is a broader set: X Layer mainnet is
+ * configured so the app can render there, but nothing is deployed on it, so a
+ * write sent from it would fail exactly as one sent from Ethereum would.
+ */
+export const ACTIVE_CHAIN = xLayerTestnet;
+
+/** True only on the chain the contracts actually live on. */
+export function isActiveChain(chainId: number | undefined): boolean {
+  return chainId === ACTIVE_CHAIN.id;
+}
+
+/**
+ * Human name for whatever chain a wallet turned up on, so a prompt can say
+ * where the user actually is rather than just "wrong network".
+ *
+ * Only the chains someone plausibly has selected are named. Anything else gets
+ * its id, which is honest and still actionable, rather than a guessed name.
+ */
+const FOREIGN_CHAIN_NAMES: Record<number, string> = {
+  1: "Ethereum Mainnet",
+  10: "OP Mainnet",
+  56: "BNB Smart Chain",
+  137: "Polygon",
+  8453: "Base",
+  42161: "Arbitrum One",
+  43114: "Avalanche",
+  11155111: "Sepolia",
+};
+
+export function chainLabel(chainId: number | undefined): string {
+  if (chainId === undefined) return "an unknown network";
+  const configured = SUPPORTED_CHAINS.find((c) => c.id === chainId);
+  if (configured) return `${configured.name} (chain ${chainId})`;
+  const known = FOREIGN_CHAIN_NAMES[chainId];
+  return known ? `${known} (chain ${chainId})` : `chain ${chainId}`;
+}
+
 /** True when the connected chain has a deployment we can mint into. */
 export function chainHasUniverse(chainId: number | undefined): boolean {
   return chainId === xLayer.id || chainId === xLayerTestnet.id;
