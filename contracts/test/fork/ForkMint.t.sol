@@ -80,11 +80,15 @@ contract ForkMintTest is Test {
         IERC20(USDG).approve(address(basket), amount);
     }
 
-    function _split(uint256 usdgIn) internal pure returns (uint256[] memory s) {
+    /// @dev Sized to the POST-FEE amount. The fork suite runs at the registry's
+    /// real default fee (30 bps), so these mints exercise the fee path against
+    /// live pools rather than a zeroed configuration.
+    function _split(uint256 usdgIn) internal view returns (uint256[] memory s) {
+        (, uint256 net) = arkiv.quoteMintFee(usdgIn);
         s = new uint256[](3);
-        s[0] = (usdgIn * 3000) / 10_000;
-        s[1] = (usdgIn * 3000) / 10_000;
-        s[2] = usdgIn - s[0] - s[1];
+        s[0] = (net * 3000) / 10_000;
+        s[1] = (net * 3000) / 10_000;
+        s[2] = net - s[0] - s[1];
     }
 
     function _mint(address who, uint256 usdgIn, uint256 minSharesOut) internal returns (uint256) {
@@ -105,13 +109,21 @@ contract ForkMintTest is Test {
     }
 
     /// @notice A real $1,000 mint: three real swaps, three real callbacks.
+    /// @dev The basis is the POST-FEE amount. One share must be backed by one
+    /// dollar that actually reached the legs, so at 30 bps a $1,000 gross mint
+    /// opens the basket at 997e18 and not at 1000e18.
     function test_firstMintAgainstRealPools() public {
         uint256 dead = basket.DEAD_SHARES();
-        uint256 shares = _mint(alice, 1_000_000_000, 0);
+        uint256 usdgIn = 1_000_000_000;
+        (uint256 fee, uint256 net) = arkiv.quoteMintFee(usdgIn);
+        assertEq(fee, 3_000_000, "30 bps of $1,000 is $3");
 
-        assertEq(shares, 1000e18 - dead, "$1,000 at the fixed first-mint basis, less dead shares");
-        assertEq(basket.balanceOf(alice), 1000e18 - dead);
-        assertEq(basket.totalSupply(), 1000e18);
+        uint256 shares = _mint(alice, usdgIn, 0);
+        uint256 basis = net * basket.FIRST_MINT_SCALE();
+
+        assertEq(shares, basis - dead, "post-fee basis, less dead shares");
+        assertEq(basket.balanceOf(alice), basis - dead);
+        assertEq(basket.totalSupply(), basis);
 
         assertGt(basket.reserves(gldx), 0, "GLDx acquired");
         assertGt(basket.reserves(nvdax), 0, "NVDAx acquired");
@@ -164,17 +176,97 @@ contract ForkMintTest is Test {
     function test_redeemInKindAgainstRealTokens() public {
         _mint(alice, 1_000_000_000, 0);
 
-        uint256[] memory preview = basket.previewRedeem(500e18);
+        // Half of whatever the post-fee basis turned out to be, rather than a
+        // hardcoded 500e18 that silently assumes a fee-free mint.
+        uint256 supplyBefore = basket.totalSupply();
+        uint256 half = supplyBefore / 2;
+        uint256[] memory preview = basket.previewRedeem(half);
 
         vm.prank(alice);
-        uint256[] memory amounts = basket.redeem(500e18, alice, new uint256[](3));
+        uint256[] memory amounts = basket.redeem(half, alice, new uint256[](3));
 
         for (uint256 i; i < 3; ++i) {
             assertEq(amounts[i], preview[i], "redeem matches preview");
             assertEq(IERC20(legs[i]).balanceOf(alice), amounts[i], "paid in kind");
             assertGt(amounts[i], 0);
         }
-        assertEq(basket.totalSupply(), 500e18);
+        assertEq(basket.totalSupply(), supplyBefore - half, "supply falls by exactly what was burned");
+    }
+
+    // -----------------------------------------------------------------
+    // Economics, against real pools
+    // -----------------------------------------------------------------
+
+    /// @notice A full $5,000 mint with the fee live, against real pools.
+    ///
+    /// @dev The point is that the fee changes nothing structural. It is taken
+    /// off the USDG before any swap; the registry's balance rises by exactly the
+    /// fee; the basket's reserves equal its own MEASURED token balance deltas;
+    /// and the share count still resolves against those deltas rather than
+    /// against anything the adapter reported.
+    function test_mintWithFeeAgainstRealPools() public {
+        assertEq(arkiv.feeBps(), 30, "fork suite runs at the shipping default");
+
+        uint256 usdgIn = XLayerConfig.MINT_CAP; // $5,000
+        (uint256 fee, uint256 net) = arkiv.quoteMintFee(usdgIn);
+        assertEq(fee, 15_000_000, "30 bps of $5,000 is $15");
+
+        uint256 registryBefore = IERC20(USDG).balanceOf(address(arkiv));
+
+        uint256[] memory legBefore = new uint256[](3);
+        for (uint256 i; i < 3; ++i) {
+            legBefore[i] = IERC20(legs[i]).balanceOf(address(basket));
+        }
+
+        uint256 shares = _mint(alice, usdgIn, 0);
+
+        // The fee left the mint path entirely and landed in the registry.
+        assertEq(IERC20(USDG).balanceOf(address(arkiv)) - registryBefore, fee, "registry booked exactly the fee");
+        assertEq(IERC20(USDG).balanceOf(address(basket)), 0, "basket keeps no USDG");
+
+        // Reserves are the measured deltas of real ERC-20 balances, not quotes.
+        for (uint256 i; i < 3; ++i) {
+            uint256 delta = IERC20(legs[i]).balanceOf(address(basket)) - legBefore[i];
+            assertEq(basket.reserves(legs[i]), delta, "reserve is the measured delta");
+            assertGt(delta, 0, "real tokens actually arrived");
+        }
+
+        // First mint: basis on the net, so the fee shows up as fewer shares and
+        // nowhere else.
+        assertEq(shares, net * basket.FIRST_MINT_SCALE() - basket.DEAD_SHARES(), "post-fee basis");
+
+        // Split as configured, from a fee the depositor was quoted in advance.
+        assertEq(arkiv.curatorEarnings(address(this)), fee / 2, "curator half");
+        assertEq(arkiv.protocolEarnings(), fee - fee / 2, "protocol half");
+    }
+
+    /// @notice A SECOND mint with the fee live still binds on the worst leg,
+    /// computed from measured deltas.
+    function test_secondMintWithFeeStillUsesMeasuredDeltas() public {
+        _mint(alice, 1_000_000_000, 0);
+
+        uint256 supplyBefore = basket.totalSupply();
+        uint256[] memory reserveBefore = new uint256[](3);
+        uint256[] memory balBefore = new uint256[](3);
+        for (uint256 i; i < 3; ++i) {
+            reserveBefore[i] = basket.reserves(legs[i]);
+            balBefore[i] = IERC20(legs[i]).balanceOf(address(basket));
+        }
+
+        uint256 shares = _mint(bob, 1_000_000_000, 0);
+
+        // Recompute min_i(d_i / B_i) from the basket's own measured balance
+        // deltas plus whatever it refunded, which together are `received`.
+        uint256 expected = type(uint256).max;
+        for (uint256 i; i < 3; ++i) {
+            uint256 kept = IERC20(legs[i]).balanceOf(address(basket)) - balBefore[i];
+            uint256 refunded = IERC20(legs[i]).balanceOf(bob);
+            uint256 received = kept + refunded;
+            uint256 candidate = (supplyBefore * received) / reserveBefore[i];
+            if (candidate < expected) expected = candidate;
+        }
+
+        assertEq(shares, expected, "shares = S * min_i(d_i / B_i), fee or no fee");
     }
 
     /// @notice R6, against the real rebasing base token: donated, inert.

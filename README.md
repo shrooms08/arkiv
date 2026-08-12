@@ -9,7 +9,7 @@ whether the thesis was right.
 
 - [`docs/FINDINGS.md`](docs/FINDINGS.md) — what was verified on chain 196, and how
 - [`docs/RISKS.md`](docs/RISKS.md) — what this design does not fix
-- [`contracts/`](contracts/) — Foundry project, 109 tests including live-fork tests
+- [`contracts/`](contracts/) — Foundry project, 146 tests including live-fork tests
 
 ## Read this before you mint
 
@@ -119,7 +119,7 @@ So the same contracts are verified two ways:
 - **Real assets** — the identical code is exercised against the *real* mainnet
   pools by the fork tests at a pinned block (`contracts/test/fork/`). A $5,000
   mint blends to 18 bp of slippage; exit values agree with mint-implied prices to
-  within 0.1%; the swap callback is attacked from an EOA and holds. 27 of the 109
+  within 0.1%; the swap callback is attacked from an EOA and holds. 30 of the 146
   tests run against live chain-196 state.
 
 The mock adapter's prices are the exit values **measured from those real pools** —
@@ -133,6 +133,43 @@ deployment to work at all.
 Mainnet launch follows the competition, as its terms require. The mainnet deploy
 script is in the repo, working, and untested against the live chain.
 
+## How it makes money, and why the fee stops
+
+A mint charges **30 bps** on the USDG going in, hard-capped in the contract at
+**100 bps** so the owner cannot raise it arbitrarily. Half of that fee accrues to
+the **curator** — the address that filed the thesis. The rest goes to the
+protocol. There is **no redemption fee at any setting**: the exit stays
+unconditional, in-kind and ungated (R10).
+
+The rule that matters is the third one:
+
+> **A curator earns only while their thesis stands.** Once the falsifier's breach
+> condition is attested on-chain, their share stops permanently and the whole fee
+> routes to the protocol.
+
+Every creator programme in DeFi pays on volume, so the incentive is to publish
+loudly and often. Arkiv pays on being right — which is only expressible because
+every basket carries a falsifiable claim, recorded on-chain at creation, before
+anyone could know the answer. A thesis that turned out wrong stops earning, and
+keeps its serial number in the archive either way.
+
+Breach is permanent and one-directional: there is no un-breach path. It also
+reaches nothing but fee routing — a breached basket redeems exactly like a
+standing one, and a curator's already-accrued balance is never clawed back.
+
+**The attestor is currently a single address.** It decides when a thesis has been
+proved wrong, and that decision ends an income stream. That is a real trust
+assumption, not a detail: it is written up in full as
+[R13](docs/RISKS.md), along with what would actually fix it (a dispute window,
+then a decentralised attestation set). Every attestation commits on-chain to an
+off-chain evidence record naming the observable and the source, so a wrong call
+is checkable by anyone afterwards.
+
+Curators are ranked by **claims that held, never by returns**. A return is mostly
+the market's and mostly luck; a falsifier published in advance that did not
+trigger is evidence about the author. `curatorRecord(address)` returns baskets
+authored, baskets breached, and claims still standing.
+
 ## Who controls it
 
 The Arkiv owner is a **single EOA**. It can pause minting, change the allowlist,
@@ -145,6 +182,6 @@ rather than a hidden one. See R8 in [`docs/RISKS.md`](docs/RISKS.md).
 
 ## Status
 
-Contracts complete, 109 tests. Underwriter live. Deployed and verified on
+Contracts complete, 146 tests. Underwriter live. Deployed and verified on
 X Layer testnet (21 contracts, three baskets seeded and exercised), app live at
 https://arkiv-protocol.vercel.app. Mainnet launch follows the competition.

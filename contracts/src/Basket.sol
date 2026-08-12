@@ -26,6 +26,17 @@ import {IDexAdapter} from "./interfaces/IDexAdapter.sol";
 /// minter. On a 50 bp spread across legs that is roughly $25 on a $5,000 mint.
 /// It leaves dust in the minter's wallet, which is honest.
 ///
+/// ## The mint fee sits outside the share maths
+///
+/// The fee is taken off the incoming USDG BEFORE anything is swapped, and only
+/// the net reaches the legs. Nothing downstream knows a fee happened: `d_i` is
+/// still a measured balance delta, `shares` is still `S * min_i(d_i / B_i)`, and
+/// the first mint still fixes its basis on the USDG that actually bought assets.
+/// Fewer dollars in means fewer units received and proportionally fewer shares —
+/// which is the whole of the fee's effect on a depositor.
+///
+/// There is no redemption fee, at any setting. R10 keeps the exit unconditional.
+///
 /// ## Buy and hold
 ///
 /// Thesis weights are declared once, at creation, and never change. The basket
@@ -46,6 +57,8 @@ import {IDexAdapter} from "./interfaces/IDexAdapter.sol";
 /// balance. See `DEAD_SHARES` for the second, independent guard.
 contract Basket is ERC20, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
+
+    uint256 public constant BPS = 10_000;
 
     /// @notice USDG is 6 decimals; shares are 18. The first mint fixes the basis
     /// at 1 share ≈ $1, so a $5,000 opening mint issues 5,000e18 shares.
@@ -88,7 +101,7 @@ contract Basket is ERC20, ReentrancyGuardTransient {
 
     error OnlyArkiv();
     error ArrayLengthMismatch();
-    error SplitMismatch(uint256 sum, uint256 usdgIn);
+    error SplitMismatch(uint256 sum, uint256 netUsdgIn);
     error ZeroSplit(uint256 index);
     error LegSlippage(uint256 index, address token, uint256 received, uint256 minAmountOut);
     error InsufficientShares(uint256 shares, uint256 minSharesOut);
@@ -97,12 +110,15 @@ contract Basket is ERC20, ReentrancyGuardTransient {
     error BelowMinimumFirstMint(uint256 usdgIn, uint256 required);
     error RedeemSlippage(uint256 index, address token, uint256 amount, uint256 minAmountOut);
 
+    /// @param usdgIn Gross USDG the minter paid.
+    /// @param fee Taken off `usdgIn` before the split; `usdgIn - fee` bought legs.
     /// @param bindingToken The leg that set the share count — the worst leg.
     /// Zero on the first mint, which takes a fixed basis and has no ratio.
     event Minted(
         address indexed minter,
         address indexed receiver,
         uint256 usdgIn,
+        uint256 fee,
         uint256 shares,
         address bindingToken,
         uint256[] received,
@@ -138,7 +154,9 @@ contract Basket is ERC20, ReentrancyGuardTransient {
     // ---------------------------------------------------------------------
 
     /// @notice Deposit USDG, swap it into the legs, receive shares.
-    /// @param usdgIn Total USDG to spend, in base units (6 decimals).
+    /// @param usdgIn Total USDG to spend, in base units (6 decimals). The mint
+    /// fee is taken from this, and `usdgIn - fee` is what the split must cover.
+    /// Call `Arkiv.quoteMintFee` to size the split.
     /// @param usdgSplit How much USDG to send to each leg. Chosen off-chain from
     /// a quote sized to current composition. A quote used to *route* is not an
     /// oracle in the settlement path: it decides how much to spend where, and
@@ -159,15 +177,21 @@ contract Basket is ERC20, ReentrancyGuardTransient {
         uint256 n = _tokens.length;
         if (usdgSplit.length != n || minAmountsOut.length != n) revert ArrayLengthMismatch();
 
-        // Pause, cap and sanctions, before any funds move.
+        // Pause, cap and sanctions, before any funds move. The cap is on the
+        // gross amount — it is what the depositor parts with.
         arkiv.checkMint(msg.sender, receiver, usdgIn);
+
+        // Fee first, so everything after this line is about the money that
+        // actually buys assets.
+        uint256 fee = (usdgIn * arkiv.feeBps()) / BPS;
+        uint256 netUsdgIn = usdgIn - fee;
 
         uint256 splitSum;
         for (uint256 i; i < n; ++i) {
             if (usdgSplit[i] == 0) revert ZeroSplit(i);
             splitSum += usdgSplit[i];
         }
-        if (splitSum != usdgIn) revert SplitMismatch(splitSum, usdgIn);
+        if (splitSum != netUsdgIn) revert SplitMismatch(splitSum, netUsdgIn);
 
         bool firstMint = totalSupply() == 0;
         if (firstMint) {
@@ -177,7 +201,16 @@ contract Basket is ERC20, ReentrancyGuardTransient {
 
         IERC20(usdg).safeTransferFrom(msg.sender, address(this), usdgIn);
 
-        uint256[] memory received = _swapLegs(usdgIn, usdgSplit, minAmountsOut, n);
+        // Hand the fee to the registry and let it book the split. Doing this
+        // before the swaps keeps the basket's USDG balance equal to what it is
+        // about to spend, so a partial failure cannot leave fee money stranded
+        // here looking like reserve.
+        if (fee != 0) {
+            IERC20(usdg).safeTransfer(address(arkiv), fee);
+            arkiv.recordFee(fee);
+        }
+
+        uint256[] memory received = _swapLegs(netUsdgIn, usdgSplit, minAmountsOut, n);
 
         uint256[] memory used = new uint256[](n);
         address bindingToken;
@@ -191,7 +224,10 @@ contract Basket is ERC20, ReentrancyGuardTransient {
                 used[i] = received[i];
             }
 
-            uint256 gross = usdgIn * FIRST_MINT_SCALE;
+            // Basis on the NET, not the gross. One share must be backed by one
+            // dollar that actually reached the legs; issuing against the fee too
+            // would open every basket slightly above its own backing.
+            uint256 gross = netUsdgIn * FIRST_MINT_SCALE;
             // Cannot underflow given a sane minFirstMint, but a bad admin value
             // should surface as this error rather than as a panic.
             if (gross <= DEAD_SHARES) revert BelowMinimumFirstMint(usdgIn, arkiv.minFirstMint());
@@ -236,16 +272,18 @@ contract Basket is ERC20, ReentrancyGuardTransient {
             if (refund != 0) IERC20(_tokens[i]).safeTransfer(msg.sender, refund);
         }
 
-        emit Minted(msg.sender, receiver, usdgIn, shares, bindingToken, received, used);
+        emit Minted(msg.sender, receiver, usdgIn, fee, shares, bindingToken, received, used);
     }
 
     /// @dev Split out to keep `mint` under the stack limit.
-    function _swapLegs(uint256 usdgIn, uint256[] calldata usdgSplit, uint256[] calldata minAmountsOut, uint256 n)
+    /// @param netUsdgIn Post-fee USDG. The approval is sized to exactly this, so
+    /// the adapter can never reach the fee even for the length of one call.
+    function _swapLegs(uint256 netUsdgIn, uint256[] calldata usdgSplit, uint256[] calldata minAmountsOut, uint256 n)
         internal
         returns (uint256[] memory received)
     {
         IDexAdapter adapter = arkiv.dexAdapter();
-        IERC20(usdg).forceApprove(address(adapter), usdgIn);
+        IERC20(usdg).forceApprove(address(adapter), netUsdgIn);
 
         received = new uint256[](n);
         for (uint256 i; i < n; ++i) {
@@ -276,6 +314,11 @@ contract Basket is ERC20, ReentrancyGuardTransient {
     /// no pool, so it is not exposed to liquidity at all, and a redeemer chooses
     /// their own exit. Gating the exit would let an admin key or a third-party
     /// list trap user funds in the vault; screening belongs on the way in.
+    ///
+    /// It also charges NO FEE, reads no fee parameter, and never calls the
+    /// registry. Nothing the owner or the attestor can set reaches this
+    /// function — a breached basket redeems exactly like an unbreached one,
+    /// because breach is a verdict on a claim and not a claim on anyone's money.
     function redeem(uint256 shares, address receiver, uint256[] calldata minAmountsOut)
         external
         nonReentrant

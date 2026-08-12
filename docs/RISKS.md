@@ -346,6 +346,66 @@ what an operator approved.
 
 ---
 
+## R13 — Breach attestation is one address. HIGH. Stated, not solved.
+
+`Arkiv.attestBreach` is callable only by `attestor`, which is **a single
+address**, defaulting to the deployer. That address decides when a thesis has
+been proved wrong, and that decision has money attached: it permanently ends the
+curator's share of the mint fee on that basket.
+
+Concretely, the attestor can:
+
+- **end a curator's income stream early**, by attesting a breach that the
+  observable does not actually support; and
+- **keep paying a curator who was wrong**, by declining to attest a breach that
+  did occur.
+
+The second is the likelier failure in practice, because it is the one nobody
+complains about. A protocol that only ever attests breaches when a loud holder
+demands it will drift into being a volume programme with extra steps, which is
+precisely what this design exists not to be.
+
+**What it cannot do.** Breach affects fee routing and nothing else. It cannot
+pause a basket, cannot touch reserves, cannot alter share accounting, and cannot
+reach redemption — `Basket.redeem` never calls the registry and reads no fee or
+breach state. A breached basket redeems exactly like a standing one. Nor can a
+breach claw back a curator's already-accrued balance; the stream stops, and what
+was earned while the thesis stood remains claimable. See R10.
+
+**Bounded on one side by construction.** Breach is permanent: there is no
+un-breach entrypoint, and a second attestation on the same basket reverts. So
+the attestor cannot restore a curator's income after ending it, and cannot move
+the timestamp. The discretion is one-directional, which is deliberate — a
+falsifier that can be withdrawn is not a falsifier.
+
+**The honest production answer** is not a better-behaved single key. It is one
+of:
+
+1. a **dispute window** — an attestation is provisional for N days, during which
+   the curator or any holder can challenge it with a bond, and accrual is
+   escrowed rather than redirected;
+2. a **decentralised attestation set** — m-of-n attestors, or an existing
+   optimistic oracle, resolving against the observable named in the falsifier; or
+3. **mechanical resolution** for the subset of falsifiers whose observable is
+   already on-chain, where no human judgement is required at all.
+
+(3) is the most interesting and the least general: most Arkiv falsifiers name a
+public but off-chain observable — a rolling 12-month total return, a CPI print —
+so a feed would have to be trusted anyway, moving the problem rather than
+solving it. (1) is the cheapest real improvement and is the intended next step.
+
+`evidenceHash` is the partial mitigation available today. Every attestation
+commits on-chain to an off-chain record naming the observable that was breached
+and the source it was read from, keyed the same way as the underwriting record.
+That does not stop a dishonest attestation, but it makes one **checkable after
+the fact by anyone**, and it means a wrong call leaves a permanent, timestamped
+artefact next to the thesis it killed.
+
+Time-boxed with R8: both are the same class of problem, and both resolve by
+moving the key to a multisig and then to a mechanism.
+
+---
+
 ## Open items
 
 | # | Item | Blocker |
@@ -360,6 +420,7 @@ what an operator approved.
 | 8 | Range-chunk `/archive` log queries so they work under a 100-block limit | Gate 2 |
 | 9 | Move owner from EOA to a multisig via `Ownable2Step` | post-hackathon |
 | 10 | Re-pin the fork block if the public RPC prunes state at 67,600,000 | — |
+| 11 | Replace the single attestor with a dispute window, then an attestation set (R13) | post-hackathon |
 
 Closed since Gate 0: the V3-fork init code hash is confirmed canonical (was a
 prerequisite for the callback guard's CREATE2 lock), and the six zero-supply

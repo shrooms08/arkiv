@@ -13,6 +13,7 @@ import {
   fetchBasketPage,
   type ArchiveEntry,
 } from "@/lib/chain/archive";
+import { fetchBreachFlags } from "@/lib/chain/curator";
 
 /** Age in whole units, with the unit chosen so the number stays legible. */
 function ageParts(createdAt: number): { value: string; unit: string } {
@@ -33,6 +34,8 @@ export default function ArchivePage() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [breached, setBreached] = useState<Record<string, boolean>>({});
+  const [filter, setFilter] = useState<"all" | "standing" | "breached">("all");
 
   async function loadPage(from: number) {
     if (!client || !deployment) return;
@@ -45,6 +48,21 @@ export default function ArchivePage() {
       const details = await fetchBasketDetails(client, addresses);
       setEntries((prev) => (from === 0 ? details : [...prev, ...details]));
       setOffset(from + addresses.length);
+
+      // Breach flags are a separate multicall so a failure here cannot stop the
+      // archive itself from rendering.
+      try {
+        const flags = await fetchBreachFlags(client, deployment.arkiv, addresses);
+        setBreached((prev) => {
+          const next = { ...prev };
+          addresses.forEach((a, i) => {
+            next[a.toLowerCase()] = flags[i] ?? false;
+          });
+          return next;
+        });
+      } catch {
+        /* leave flags absent; rows render as standing */
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,6 +97,23 @@ export default function ArchivePage() {
         </div>
       </header>
 
+      <div className="archive-filters" role="group" aria-label="Filter by claim status">
+        {(["all", "standing", "breached"] as const).map((f) => (
+          <button
+            key={f}
+            type="button"
+            className={`archive-filter${filter === f ? " is-selected" : ""}`}
+            aria-pressed={filter === f}
+            onClick={() => setFilter(f)}
+          >
+            {f === "all" ? "All" : f === "standing" ? "Claims that held" : "Proved wrong"}
+          </button>
+        ))}
+        <span className="app-note">
+          Ranked by claims, never by returns.
+        </span>
+      </div>
+
       <p className="app-prose archive-source-note">
         Read straight from the registry&rsquo;s on-chain array &mdash; one paginated call
         plus one multicall per page. No event scan, no indexer, and no dependency on an
@@ -101,12 +136,17 @@ export default function ArchivePage() {
 
       <ol className="archive-list">
         {entries.map((entry, i) => {
+          const isBreached = breached[entry.address.toLowerCase()] ?? false;
+          if (filter === "standing" && isBreached) return null;
+          if (filter === "breached" && !isBreached) return null;
           const age = ageParts(entry.createdAt);
           return (
             <li key={entry.address} className="app-row archive-entry">
               <div className="archive-col-serial archive-cell">
                 <SerialNumber index={i + 1} emphasis />
-                <Badge tone="outline">Open</Badge>
+                <Badge tone={isBreached ? "verdict" : "outline"}>
+                  {isBreached ? "Breached" : "Standing"}
+                </Badge>
                 <span className="app-label archive-address">
                   {entry.address.slice(0, 6)}…{entry.address.slice(-4)}
                 </span>

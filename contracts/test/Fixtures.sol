@@ -14,6 +14,18 @@ import {MockDexAdapter} from "./mocks/MockDexAdapter.sol";
 ///
 /// The first four wrappers are marked core, mirroring the real universe's four
 /// core assets (GLDx, QQQx, SPYx, IWMx).
+///
+/// ## The fee is zero here, deliberately
+///
+/// `setUpArkiv` sets `feeBps = 0`. The registry's own default is 30 bps and the
+/// fee suite exercises 0/1/30/100 directly; this fixture zeroes it so the
+/// accounting suite keeps testing the share maths on round numbers rather than
+/// on `usdgIn * 9970 / 10000`. A fee that changed those assertions would be
+/// hiding the fee inside every unrelated test instead of testing it once.
+///
+/// `_splitAtWeights` still reads the live fee, so any test that raises it gets a
+/// correctly sized split with no further work.
+///
 /// ## Test conventions
 ///
 /// **Never call a helper that makes an external call from an argument position
@@ -53,6 +65,10 @@ abstract contract ArkivFixture is Test {
 
         arkiv = new Arkiv(address(usdg), address(sanctions), address(adapter), MINT_CAP, MIN_FIRST_MINT, owner);
 
+        // See the contract docs above: the accounting suite runs fee-free.
+        vm.prank(owner);
+        arkiv.setFeeBps(0);
+
         address[] memory deployed = new address[](8);
         for (uint256 i; i < 8; ++i) {
             deployed[i] = address(new MockERC20("Wrapper", "wXXXx", 18));
@@ -86,20 +102,24 @@ abstract contract ArkivFixture is Test {
         usdg.approve(address(basket), amount);
     }
 
-    /// @notice The USDG split proportional to the thesis weights. In production
-    /// this comes from a quote sized to current composition; here it is the
-    /// declared weights, which is the same thing on the first mint.
+    /// @notice The USDG split proportional to the thesis weights, sized to the
+    /// POST-FEE amount because that is what `mint` requires the split to cover.
+    ///
+    /// In production this comes from a quote sized to current composition; here
+    /// it is the declared weights, which is the same thing on the first mint.
     function _splitAtWeights(Basket basket, uint256 usdgIn) internal view returns (uint256[] memory split) {
         uint16[] memory weights = basket.thesisWeightsBps();
         uint256 n = weights.length;
 
+        (, uint256 netUsdgIn) = arkiv.quoteMintFee(usdgIn);
+
         split = new uint256[](n);
         uint256 assigned;
         for (uint256 i; i < n - 1; ++i) {
-            split[i] = (usdgIn * weights[i]) / 10_000;
+            split[i] = (netUsdgIn * weights[i]) / 10_000;
             assigned += split[i];
         }
-        split[n - 1] = usdgIn - assigned; // remainder to the last leg
+        split[n - 1] = netUsdgIn - assigned; // remainder to the last leg
     }
 
     /// @notice Mint with the USDG split proportional to the thesis weights.
@@ -113,6 +133,18 @@ abstract contract ArkivFixture is Test {
         _fundAndApprove(who, basket, usdgIn);
         vm.prank(who);
         shares = basket.mint(usdgIn, split, minOut, minSharesOut, who);
+    }
+
+    /// @notice Set the mint fee as the owner.
+    function _setFeeBps(uint256 bps) internal {
+        vm.prank(owner);
+        arkiv.setFeeBps(bps);
+    }
+
+    /// @notice Set the curator's share of the fee as the owner.
+    function _setCuratorBps(uint256 bps) internal {
+        vm.prank(owner);
+        arkiv.setCuratorBps(bps);
     }
 
     /// @notice A zeroed floor array of length `n`.

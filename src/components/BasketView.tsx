@@ -22,6 +22,7 @@ import { explainRevert } from "@/lib/chain/errors";
 import { deploymentFor, symbolFor } from "@/lib/chain/deployments";
 import { dsRole } from "@/lib/ui/roles";
 import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
+import { fetchCurator, type CuratorRecord } from "@/lib/chain/curator";
 import { fetchExitValuesFor, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
 
 export interface BasketRecord {
@@ -55,6 +56,9 @@ export function BasketView({
   const [prices, setPrices] = useState<Map<Address, LegExitValue> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [redeeming, setRedeeming] = useState(false);
+  const [curator, setCurator] = useState<
+    { curator: Address; record: CuratorRecord; breached: boolean } | null
+  >(null);
 
   async function load() {
     if (!client) return;
@@ -63,6 +67,12 @@ export function BasketView({
       setState(s);
       if (deployment) {
         setPrices(await fetchExitValuesFor(client, deployment, s.tokens));
+        // Best-effort: a missing curator read must not blank the whole page.
+        try {
+          setCurator(await fetchCurator(client, deployment.arkiv, address));
+        } catch {
+          setCurator(null);
+        }
       }
     } catch (e) {
       setError(explainRevert(e));
@@ -155,6 +165,34 @@ export function BasketView({
           <Badge tone="outline">Open</Badge>
         </div>
         <h1 className="app-display-h1 basket-name">{state.name}</h1>
+
+        {curator && (
+          <div className="basket-curator">
+            <div className="basket-curator__who">
+              <span className="app-label">Filed by</span>
+              <AddressChip address={curator.curator} />
+              {curator.breached && <Badge tone="verdict">Falsifier breached</Badge>}
+            </div>
+            <div className="basket-curator__record">
+              <span className="app-label">Their record</span>
+              <span className="basket-curator__figures">
+                <span>
+                  <strong>{curator.record.standing}</strong> standing
+                </span>
+                <span>
+                  <strong>{curator.record.breached}</strong> breached
+                </span>
+                <span>
+                  <strong>{curator.record.authored}</strong> filed
+                </span>
+              </span>
+              <span className="app-note">
+                Claims that held, not returns. A falsifier published in advance that
+                did not trigger is evidence; a return is mostly luck.
+              </span>
+            </div>
+          </div>
+        )}
       </header>
 
       <section className="app-panel app-panel--marked basket-composition">

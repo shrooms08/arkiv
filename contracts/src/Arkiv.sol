@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IArkiv} from "./interfaces/IArkiv.sol";
 import {IDexAdapter} from "./interfaces/IDexAdapter.sol";
@@ -12,13 +14,28 @@ import {Basket} from "./Basket.sol";
 /// @title Arkiv
 /// @notice Registry and factory. Holds the asset allowlist, the mint cap, the
 /// DEX adapter and the pause switch; deploys baskets and enforces the
-/// composition rules at creation time.
+/// composition rules at creation time. Also the fee ledger: mint fees are booked
+/// here and split between the basket's curator and the protocol.
 ///
 /// Basket creation is permissionless. Every constraint that matters is checked
 /// on-chain here, so there is nothing an untrusted creator can smuggle past —
 /// and the archive is more honest if it records what people actually believed
 /// rather than what an operator approved.
+///
+/// ## The economics, and why they need a falsifier
+///
+/// A mint charges `feeBps` on the USDG coming in. `curatorBps` of that accrues
+/// to the basket's creator; the rest to the protocol. **Curator accrual stops
+/// permanently once the basket's falsifier is attested breached** — from that
+/// point the whole fee goes to the protocol.
+///
+/// That last rule is the product. Every creator programme in DeFi pays on
+/// volume, so the incentive is to publish loudly. This pays on being right,
+/// which is only expressible because a basket carries a falsifiable claim
+/// recorded at creation. A thesis that turned out wrong stops earning.
 contract Arkiv is IArkiv, Ownable2Step {
+    using SafeERC20 for IERC20;
+
     // ---------------------------------------------------------------------
     // Composition rules
     // ---------------------------------------------------------------------
@@ -44,6 +61,26 @@ contract Arkiv is IArkiv, Ownable2Step {
     /// rejecting it. Whether a basket actually expresses a view is a product
     /// concern, enforced where the underwriter's output is validated.
     uint256 public constant MIN_CORE_BPS = 5000;
+
+    // ---------------------------------------------------------------------
+    // Fee rules
+    // ---------------------------------------------------------------------
+
+    /// @notice Hard ceiling on the mint fee, enforced in `setFeeBps`.
+    ///
+    /// @dev A constant, not an owner-settable bound, so the fee cannot be raised
+    /// arbitrarily by the key that collects it. 100 bps is the whole promise: a
+    /// depositor can read this number once and know the worst case for every
+    /// future mint without trusting anyone. There is no corresponding redemption
+    /// fee at any value — see `Basket.redeem` and R10.
+    uint256 public constant MAX_FEE_BPS = 100;
+
+    /// @notice Mint fee in basis points on the USDG coming in. Default 30.
+    uint256 public feeBps = 30;
+
+    /// @notice Curator's share of the mint fee, in basis points. Default 5000,
+    /// meaning half. Applies only while the basket is unbreached.
+    uint256 public curatorBps = 5000;
 
     // ---------------------------------------------------------------------
     // State
@@ -77,8 +114,39 @@ contract Arkiv is IArkiv, Ownable2Step {
     /// @notice Blocks minting. Never blocks redemption.
     bool public paused;
 
+    /// @notice The only address that may attest a breach.
+    ///
+    /// @dev A single address today, which is a real trust assumption and is
+    /// documented as one in RISKS.md R13. It can end a curator's income stream
+    /// but it cannot touch principal: breach affects fee routing only, and
+    /// redemption never consults it.
+    address public attestor;
+
     address[] public baskets;
     mapping(address => bool) public isBasket;
+
+    /// @notice Who wrote the thesis. Recorded at creation and never changes.
+    /// @dev The `BasketCreated` event alone was not enough: fee routing needs
+    /// this at mint time, and an event is not readable from a contract.
+    mapping(address basket => address) public creatorOf;
+
+    /// @notice Baskets a curator has authored, in creation order.
+    mapping(address curator => address[]) internal _authoredBy;
+
+    /// @notice Whether a basket's falsifier has been attested breached.
+    mapping(address basket => bool) public breached;
+
+    /// @notice When it was attested. Zero while unbreached.
+    mapping(address basket => uint64) public breachedAt;
+
+    /// @notice How many of a curator's baskets have been breached.
+    mapping(address curator => uint256) public breachedCountOf;
+
+    /// @notice Claimable USDG accrued to a curator from unbreached baskets.
+    mapping(address curator => uint256) public curatorEarnings;
+
+    /// @notice Claimable USDG accrued to the protocol.
+    uint256 public protocolEarnings;
 
     error NotAllowed(address token);
     error RebasingToken(address token);
@@ -93,12 +161,22 @@ contract Arkiv is IArkiv, Ownable2Step {
     error ZeroAmount();
     error AboveMintCap(uint256 usdgIn, uint256 cap);
     error Sanctioned(address account);
+    error FeeAboveCap(uint256 requested, uint256 cap);
+    error CuratorShareAboveBps(uint256 requested);
+    error NotABasket(address caller);
+    error OnlyAttestor(address caller);
+    error AlreadyBreached(address basket);
+    error NothingToClaim();
+    error UnknownBasket(uint256 basketId);
 
     event AssetSet(address indexed wrapper, bool allowed, bool isCore);
     event DexAdapterSet(address indexed previous, address indexed next);
     event MintCapSet(uint256 previous, uint256 next);
     event MinFirstMintSet(uint256 previous, uint256 next);
     event PausedSet(bool paused);
+    event FeeBpsSet(uint256 previous, uint256 next);
+    event CuratorBpsSet(uint256 previous, uint256 next);
+    event AttestorSet(address indexed previous, address indexed next);
     event BasketCreated(
         address indexed basket,
         address indexed creator,
@@ -107,6 +185,20 @@ contract Arkiv is IArkiv, Ownable2Step {
         address[] tokens,
         uint16[] thesisWeightsBps,
         string thesisURI
+    );
+
+    /// @param curatorAmount Zero once the basket is breached.
+    event FeeRecorded(
+        address indexed basket, address indexed curator, uint256 amount, uint256 curatorAmount, bool basketBreached
+    );
+    event CuratorFeesClaimed(address indexed curator, address indexed receiver, uint256 amount);
+    event ProtocolFeesClaimed(address indexed receiver, uint256 amount);
+
+    /// @param evidenceHash Commitment to the off-chain record naming the
+    /// observable that was breached and the source it was read from. Keyed the
+    /// same way as the underwriting record, so the two can be joined.
+    event BreachAttested(
+        address indexed basket, uint256 indexed basketId, bytes32 evidenceHash, uint64 attestedAt, address attestor
     );
 
     constructor(
@@ -125,9 +217,18 @@ contract Arkiv is IArkiv, Ownable2Step {
         dexAdapter = IDexAdapter(_dexAdapter);
         mintCap = _mintCap;
         minFirstMint = _minFirstMint;
+
+        // The owner attests until a dedicated key or committee is set. Stated
+        // rather than silently left at address(0), which would make breach
+        // unreachable and quietly turn the product into a volume programme.
+        attestor = initialOwner;
+
         emit DexAdapterSet(address(0), _dexAdapter);
         emit MintCapSet(0, _mintCap);
         emit MinFirstMintSet(0, _minFirstMint);
+        emit AttestorSet(address(0), initialOwner);
+        emit FeeBpsSet(0, feeBps);
+        emit CuratorBpsSet(0, curatorBps);
     }
 
     // ---------------------------------------------------------------------
@@ -175,6 +276,30 @@ contract Arkiv is IArkiv, Ownable2Step {
         emit PausedSet(next);
     }
 
+    /// @notice Set the mint fee. Reverts above `MAX_FEE_BPS`.
+    /// @dev Zero is allowed and is a valid configuration, not a disabled state.
+    function setFeeBps(uint256 next) external onlyOwner {
+        if (next > MAX_FEE_BPS) revert FeeAboveCap(next, MAX_FEE_BPS);
+        emit FeeBpsSet(feeBps, next);
+        feeBps = next;
+    }
+
+    /// @notice Set the curator's share of the mint fee.
+    /// @dev Bounded by BPS only. Unlike the fee itself this cannot extract from
+    /// users — it moves value between the curator and the protocol, both of whom
+    /// are downstream of a fee the depositor has already agreed to.
+    function setCuratorBps(uint256 next) external onlyOwner {
+        if (next > BPS) revert CuratorShareAboveBps(next);
+        emit CuratorBpsSet(curatorBps, next);
+        curatorBps = next;
+    }
+
+    function setAttestor(address next) external onlyOwner {
+        if (next == address(0)) revert ZeroAddress();
+        emit AttestorSet(attestor, next);
+        attestor = next;
+    }
+
     // ---------------------------------------------------------------------
     // Basket creation
     // ---------------------------------------------------------------------
@@ -219,8 +344,97 @@ contract Arkiv is IArkiv, Ownable2Step {
 
         baskets.push(basket);
         isBasket[basket] = true;
+        creatorOf[basket] = msg.sender;
+        _authoredBy[msg.sender].push(basket);
 
         emit BasketCreated(basket, msg.sender, name, symbol, tokens, thesisWeightsBps, thesisURI);
+    }
+
+    // ---------------------------------------------------------------------
+    // Fees
+    // ---------------------------------------------------------------------
+
+    /// @inheritdoc IArkiv
+    ///
+    /// @dev The basket transfers the USDG here and then calls this to book it.
+    /// Only a basket this registry deployed may call, so the amount is asserted
+    /// by code this contract itself created rather than by an arbitrary caller.
+    ///
+    /// Accrual, not transfer: paying two recipients on every mint would put two
+    /// ERC-20 transfers in the hot path and make mint gas depend on who the
+    /// curator is. Claiming is the curator's problem, once, at a time of their
+    /// choosing.
+    function recordFee(uint256 amount) external {
+        if (!isBasket[msg.sender]) revert NotABasket(msg.sender);
+        if (amount == 0) return;
+
+        address curator = creatorOf[msg.sender];
+        bool isBreached = breached[msg.sender];
+
+        // The whole mechanism, in one line: a breached thesis earns its author
+        // nothing from this point on, and the fee routes entirely to the
+        // protocol. Already-accrued balances are untouched — the stream stops,
+        // it is not clawed back.
+        uint256 curatorAmount = isBreached ? 0 : (amount * curatorBps) / BPS;
+
+        if (curatorAmount != 0) curatorEarnings[curator] += curatorAmount;
+        protocolEarnings += amount - curatorAmount;
+
+        emit FeeRecorded(msg.sender, curator, amount, curatorAmount, isBreached);
+    }
+
+    /// @notice Pull everything accrued to the caller as a curator.
+    function claimCuratorFees() external returns (uint256 amount) {
+        amount = curatorEarnings[msg.sender];
+        if (amount == 0) revert NothingToClaim();
+
+        // Zero before transferring. USDG is a plain ERC-20 with no callback, but
+        // the ordering costs nothing and does not depend on that staying true.
+        curatorEarnings[msg.sender] = 0;
+        IERC20(usdg).safeTransfer(msg.sender, amount);
+
+        emit CuratorFeesClaimed(msg.sender, msg.sender, amount);
+    }
+
+    function claimProtocolFees(address to) external onlyOwner returns (uint256 amount) {
+        if (to == address(0)) revert ZeroAddress();
+        amount = protocolEarnings;
+        if (amount == 0) revert NothingToClaim();
+
+        protocolEarnings = 0;
+        IERC20(usdg).safeTransfer(to, amount);
+
+        emit ProtocolFeesClaimed(to, amount);
+    }
+
+    // ---------------------------------------------------------------------
+    // Breach attestation
+    // ---------------------------------------------------------------------
+
+    /// @notice Record that a basket's falsifier has been breached.
+    ///
+    /// @param basketId Index into the archive — the same number the UI shows as
+    /// the basket's serial, minus one.
+    /// @param evidenceHash Commitment to the off-chain record naming the
+    /// observable and the source. Stored in the event rather than in storage:
+    /// it is written once and only ever read by a human checking the claim.
+    ///
+    /// @dev Permanent by construction. There is no un-breach path, because a
+    /// falsifier that can be withdrawn is not a falsifier — it would let the
+    /// operator restore a curator's income after the fact, which is exactly the
+    /// discretion this design exists to remove.
+    function attestBreach(uint256 basketId, bytes32 evidenceHash) external {
+        if (msg.sender != attestor) revert OnlyAttestor(msg.sender);
+        if (basketId >= baskets.length) revert UnknownBasket(basketId);
+
+        address basket = baskets[basketId];
+        if (breached[basket]) revert AlreadyBreached(basket);
+
+        breached[basket] = true;
+        breachedAt[basket] = uint64(block.timestamp);
+        breachedCountOf[creatorOf[basket]] += 1;
+
+        emit BreachAttested(basket, basketId, evidenceHash, uint64(block.timestamp), msg.sender);
     }
 
     // ---------------------------------------------------------------------
@@ -234,6 +448,14 @@ contract Arkiv is IArkiv, Ownable2Step {
         if (usdgIn > mintCap) revert AboveMintCap(usdgIn, mintCap);
         if (sanctions.isSanctioned(minter)) revert Sanctioned(minter);
         if (sanctions.isSanctioned(receiver)) revert Sanctioned(receiver);
+    }
+
+    /// @notice What a mint of `usdgIn` costs and how much reaches the legs.
+    /// @dev The UI reads this to show the fee before the user signs. A fee a
+    /// depositor discovers afterwards is a bug even when the maths is right.
+    function quoteMintFee(uint256 usdgIn) external view returns (uint256 fee, uint256 netUsdgIn) {
+        fee = (usdgIn * feeBps) / BPS;
+        netUsdgIn = usdgIn - fee;
     }
 
     function isAllowed(address wrapper) external view returns (bool) {
@@ -278,6 +500,36 @@ contract Arkiv is IArkiv, Ownable2Step {
         for (uint256 i; i < page.length; ++i) {
             page[i] = baskets[offset + i];
         }
+    }
+
+    /// @notice Every basket a curator has authored, in creation order.
+    function basketsByCurator(address curator) external view returns (address[] memory) {
+        return _authoredBy[curator];
+    }
+
+    /// @notice A curator's track record.
+    ///
+    /// @return authored Baskets written.
+    /// @return breachedCount How many have been attested breached.
+    /// @return standing How many still stand — authored minus breached.
+    ///
+    /// @dev Deliberately counts claims, not returns. A return is mostly luck and
+    /// mostly the market's; a falsifier that was published in advance and did
+    /// not trigger is evidence about the author. Ranking curators by performance
+    /// would reward whoever took the most risk in the luckiest quarter.
+    ///
+    /// "Survived its horizon" is the stronger signal and is NOT computed here:
+    /// the horizon lives in the falsifier, off-chain, and putting a date on
+    /// chain that nothing enforces would look like a guarantee. The frontend
+    /// joins this with the underwriting record to show it.
+    function curatorRecord(address curator)
+        external
+        view
+        returns (uint256 authored, uint256 breachedCount, uint256 standing)
+    {
+        authored = _authoredBy[curator].length;
+        breachedCount = breachedCountOf[curator];
+        standing = authored - breachedCount;
     }
 
     /// @dev A base xStock answers `multiplier()` with its rebase factor; a

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { parseUnits, formatUnits, type Address } from "viem";
-import { useAccount, useChainId, usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useConfig } from "wagmi";
 
@@ -29,6 +29,18 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   const { writeContractAsync } = useWriteContract();
 
   const deployment = deploymentFor(chainId);
+
+  // The fee is read from the registry, never assumed. It is owner-settable
+  // within a hard cap, so a hardcoded 30 bps here would eventually size the
+  // split wrongly and revert the mint on SplitMismatch.
+  const { data: feeBpsRaw } = useReadContract({
+    address: deployment?.arkiv,
+    abi: arkivAbi,
+    functionName: "feeBps",
+    query: { enabled: Boolean(deployment?.arkiv) },
+  });
+  const feeBps = typeof feeBpsRaw === "bigint" ? feeBpsRaw : 0n;
+
   const [amount, setAmount] = useState("100");
   const [slippageBps, setSlippageBps] = useState(100);
   const [quotes, setQuotes] = useState<LegQuote[] | null>(null);
@@ -45,13 +57,17 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
     }
   }, [amount]);
 
+  // Fee first, then split the remainder — the same order the contract uses.
+  const fee = useMemo(() => (usdgIn * feeBps) / 10_000n, [usdgIn, feeBps]);
+  const netUsdgIn = useMemo(() => usdgIn - fee, [usdgIn, fee]);
+
   const legs = useMemo(
     () =>
       thesis.holdings.map((h, i) => ({
         symbol: h.symbol,
-        usdgIn: splitFor(thesis.holdings, usdgIn)[i] ?? 0n,
+        usdgIn: splitFor(thesis.holdings, netUsdgIn)[i] ?? 0n,
       })),
-    [thesis.holdings, usdgIn],
+    [thesis.holdings, netUsdgIn],
   );
 
   // Live per-leg impact from the quoter, re-quoted whenever the size changes.
@@ -148,7 +164,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
 
       // 3. Mint, with floors derived from the live quotes.
       setStep("minting");
-      const orderedSplit = splitFor(ordered, usdgIn);
+      const orderedSplit = splitFor(ordered, netUsdgIn);
       const minAmountsOut = ordered.map((h) => {
         const q = quotes?.find((x) => x.symbol === h.symbol);
         return q?.unitsOut ? withSlippage(q.unitsOut, slippageBps) : 0n;
@@ -156,7 +172,7 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
       // Shares are bounded by the WORST leg, so the share floor is derived from
       // the whole basket rather than from any single leg's tolerance.
       const minSharesOut =
-        thesisSupplyGuess(usdgIn, slippageBps);
+        thesisSupplyGuess(netUsdgIn, slippageBps);
 
       const mintHash = await writeContractAsync({
         address: basket,
@@ -263,8 +279,16 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
             </div>
           );
         })}
+        <div className="mint-quotes__row mint-quote-fee">
+          <span className="mint-col-leg">
+            Mint fee
+            <span className="app-note mint-fee-bps"> {(Number(feeBps) / 100).toFixed(2)}%</span>
+          </span>
+          <span className="mint-col-num">{formatUnits(fee, USDG.decimals)}</span>
+          <span className="mint-col-num app-note">taken before the split</span>
+        </div>
         <div className="mint-quotes__row mint-quote-blended">
-          <span className="mint-col-leg">Blended</span>
+          <span className="mint-col-leg">You pay</span>
           <span className="mint-col-num">{formatUnits(usdgIn, USDG.decimals)}</span>
           <span className="mint-col-num">
             {!deployment.quoter ? (
@@ -277,6 +301,15 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
           </span>
         </div>
       </div>
+
+      <p className="app-prose mint-fee-note">
+        You pay <strong>{formatUnits(usdgIn, USDG.decimals)} USDG</strong>. A{" "}
+        {(Number(feeBps) / 100).toFixed(2)}% mint fee of{" "}
+        <strong>{formatUnits(fee, USDG.decimals)} USDG</strong> is taken first, and{" "}
+        <strong>{formatUnits(netUsdgIn, USDG.decimals)} USDG</strong> buys the legs.
+        Half the fee accrues to the curator who filed this thesis — and stops
+        permanently if its falsifier is ever breached. Redemption charges nothing.
+      </p>
 
       {!isConnected && <p className="app-prose">Connect a wallet to mint.</p>}
       {isConnected && wrongNetwork && (

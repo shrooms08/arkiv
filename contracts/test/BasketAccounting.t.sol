@@ -682,11 +682,14 @@ contract BasketAccountingTest is ArkivFixture {
     /// @dev Pulls the `bindingToken` field out of the Minted event.
     function _bindingTokenFromLogs() internal returns (address) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
-        bytes32 topic = keccak256("Minted(address,address,uint256,uint256,address,uint256[],uint256[])");
+        // usdgIn, fee, shares, bindingToken, received, used — minter and
+        // receiver are indexed and so are not in `data`.
+        bytes32 topic = keccak256("Minted(address,address,uint256,uint256,uint256,address,uint256[],uint256[])");
 
         for (uint256 i; i < logs.length; ++i) {
             if (logs[i].topics[0] == topic) {
-                (,, address binding,,) = abi.decode(logs[i].data, (uint256, uint256, address, uint256[], uint256[]));
+                (,,, address binding,,) =
+                    abi.decode(logs[i].data, (uint256, uint256, uint256, address, uint256[], uint256[]));
                 return binding;
             }
         }

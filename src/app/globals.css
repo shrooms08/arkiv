@@ -717,3 +717,85 @@ body {
   text-underline-offset: 2px;
   word-break: break-all;
 }
+
+/* The fee row sits directly above the total, so the number the user is about
+   to sign for is adjacent to the reason it differs from what reaches the legs. */
+.mint-quote-fee {
+  background: var(--color-surface-sunken);
+}
+.mint-fee-bps {
+  text-transform: none;
+  letter-spacing: var(--tracking-normal);
+}
+.mint-fee-note strong {
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Curator record. Sits under the basket title because who filed a claim, and
+   how their other claims have fared, is part of reading the claim. */
+.basket-curator {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-width) solid var(--color-rule);
+}
+.basket-curator__who,
+.basket-curator__record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.basket-curator__record { flex: 1 1 22rem; }
+.basket-curator__figures {
+  display: flex;
+  gap: var(--space-5);
+  font-size: var(--text-small);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.basket-curator__figures strong {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  letter-spacing: var(--tracking-tight);
+  margin-inline-end: var(--space-1);
+}
+
+/* Archive filter. Three states, because "proved wrong" is a first-class thing
+   to be able to look at rather than something the archive hides. */
+.archive-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.archive-filter {
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  border: var(--border-width) solid var(--color-rule-strong);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+.archive-filter.is-selected {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-ink-inverse);
+}
+.archive-filter:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+}
