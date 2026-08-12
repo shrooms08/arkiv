@@ -84,7 +84,7 @@ fuzz across twelve orders of magnitude of reserve size.
 the faucet, mint, redeem. The assets there are **mocks**, and the app says so on
 every page.
 
-All 21 contracts are deployed and **verified on Sourcify**, including the three
+All 23 contracts are deployed and **verified on Sourcify**, including the five
 per-basket `Basket` contracts that actually hold the funds. Every address lives
 in [`deployments/xlayer-testnet.json`](deployments/xlayer-testnet.json), written
 from the broadcast artefact and the chain rather than typed, and read directly by
@@ -92,20 +92,27 @@ the frontend — so a clone resolves the same addresses the live site uses.
 
 | Contract | Address |
 | --- | --- |
-| Arkiv (registry + factory) | [`0x2A775aaE9c11Cf0ae9543f0EB7778976EB69008f`](https://www.oklink.com/xlayer-test/address/0x2A775aaE9c11Cf0ae9543f0EB7778976EB69008f) |
-| MockUSDG (6dp, public faucet) | [`0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0`](https://www.oklink.com/xlayer-test/address/0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0) |
-| MockDexAdapter | [`0x964314bBb3038Ec181834859d81878704630F83a`](https://www.oklink.com/xlayer-test/address/0x964314bBb3038Ec181834859d81878704630F83a) |
-| MockSanctionsList | [`0x2A5Ff16591CcAa115a8b20C1F7Fe31207C8A4038`](https://www.oklink.com/xlayer-test/address/0x2A5Ff16591CcAa115a8b20C1F7Fe31207C8A4038) |
-| Basket — AIBOTTLE | [`0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a`](https://www.oklink.com/xlayer-test/address/0x1255Bdbf41109121146F5A9Fb802F07A2209aa7a) |
-| Basket — STICKYINF | [`0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf`](https://www.oklink.com/xlayer-test/address/0x09fA6b33cb49b2110101DAa5f9b80c2cC4B591Bf) |
-| Basket — SCRATE | [`0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62`](https://www.oklink.com/xlayer-test/address/0x1bE0574A8C6299D9856E03F0e5Fb9A3CD9c2Ce62) |
+| Arkiv (registry + factory) | [`0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c`](https://www.oklink.com/xlayer-test/address/0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c) |
+| MockUSDG (6dp, public faucet) | [`0x11b8B3D85b228923f37495D82d25f51eA2834EBa`](https://www.oklink.com/xlayer-test/address/0x11b8B3D85b228923f37495D82d25f51eA2834EBa) |
+| MockDexAdapter | [`0x2BBeC8d5aAEBe5aebcAeB8522877D0F6EC8D54b1`](https://www.oklink.com/xlayer-test/address/0x2BBeC8d5aAEBe5aebcAeB8522877D0F6EC8D54b1) |
+| MockSanctionsList | [`0xA19BE2A1d66676C783573490350810ECD387029c`](https://www.oklink.com/xlayer-test/address/0xA19BE2A1d66676C783573490350810ECD387029c) |
+| Basket, AIBOTTLE | [`0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a`](https://www.oklink.com/xlayer-test/address/0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a) |
+| Basket, STICKYINF | [`0x2100153203d303B82e6Ec21BDeD4bb32E455F789`](https://www.oklink.com/xlayer-test/address/0x2100153203d303B82e6Ec21BDeD4bb32E455F789) |
+| Basket, SCRATE | [`0x8964db9f1FCC6D86F34600AF40D844C715971D27`](https://www.oklink.com/xlayer-test/address/0x8964db9f1FCC6D86F34600AF40D844C715971D27) |
+| Basket, ATTENTION | [`0x6a232080E2Eb3C236F866fA92c35b246D2C86192`](https://www.oklink.com/xlayer-test/address/0x6a232080E2Eb3C236F866fA92c35b246D2C86192) |
+| Basket, EDGEAI | [`0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C`](https://www.oklink.com/xlayer-test/address/0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C) |
 
 The 14 mock wrappers are in the manifest. Sourcify source for any of them:
 `https://repo.sourcify.dev/1952/<address>`.
 
 Each basket was minted into with $500 of mock USDG and half redeemed during the
 deploy, so every contract listed has demonstrably worked rather than merely
-compiled.
+compiled. The mint fee is live at 30 bps: those five mints booked $7.50 of fee,
+split $3.75 to the curator and $3.75 to the protocol.
+
+**The curator on all five baskets is the deployer.** That is a testnet artefact
+of seeding the archive from a script, not a claim about how curation works. On a
+real deployment the curator is whoever calls `createBasket`.
 
 They are mocks for a reason that is worth stating rather than hiding: **X Layer
 testnet has no xStocks, no USDG and no pools.** There is nothing real to swap

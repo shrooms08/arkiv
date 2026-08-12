@@ -1,0 +1,71 @@
+{
+  "thesisHash": "9b7ca9022c510d89",
+  "input": "Inference migrates from the datacenter to the device. As models shrink and the silicon in consumer hardware improves, the economics favour running the work where the user already is, avoiding the round trip, the rental cost and the privacy exposure of sending everything to a server. Value shifts from cloud capacity toward the firms that control the device and the software layer sitting on it. The datacenter buildout does not stop, but the marginal query stops going there.",
+  "model": "claude-sonnet-4-6",
+  "promptVersion": "underwriter/2026-08-11.3",
+  "effort": "medium",
+  "mode": "live",
+  "attempts": 2,
+  "createdAt": "2026-08-12T13:59:08.100Z",
+  "thesis": {
+    "title": "On-Device Inference: Value Shifts from Cloud to Edge",
+    "ticker": "EDGEAI",
+    "summary": "As model compression and chip efficiency improve, the economics of running inference locally beat the cloud alternative on latency, cost, and privacy. The firms that own the device and the on-device software stack capture the value that currently flows to hyperscaler GPU rentals. Apple controls the dominant consumer device and the Neural Engine silicon inside it. NVIDIA's datacenter moat softens at the margin as queries stop reaching the cloud. Broadcom's custom silicon is embedded in edge deployments. Gold and the S&P anchor against macro disruption during a multi-year hardware refresh cycle.",
+    "holdings": [
+      {
+        "symbol": "AAPLx",
+        "weightBps": 2500,
+        "rationale": "Apple owns the full stack at the edge: the device, the Neural Engine silicon, the OS, and the on-device ML runtime. Every iPhone and Mac is a potential inference node it already sold. As on-device models mature, Apple's installed base of ~2 billion active devices becomes the inference platform, and its silicon lead in perf-per-watt directly determines how much work stays local versus leaking to the cloud."
+      },
+      {
+        "symbol": "MSFTx",
+        "weightBps": 1500,
+        "rationale": "Microsoft controls the dominant enterprise device (Windows PC) and the Copilot software layer sitting on it. Copilot+ PCs with NPUs are a direct bet on on-device inference in the enterprise; Microsoft writes the applications and the runtime that determine which queries go local versus Azure, giving it pricing power on both sides of the shift."
+      },
+      {
+        "symbol": "AVGOx",
+        "weightBps": 1000,
+        "rationale": "Broadcom designs custom inference silicon for hyperscalers and is expanding into edge network chips. As inference distributes, Broadcom's ASICs appear in the switching fabric and in custom edge accelerators. Its custom silicon business is structurally tied to whoever needs specialized inference compute, whether that sits in a datacenter or at the edge."
+      },
+      {
+        "symbol": "GLDx",
+        "weightBps": 2500,
+        "rationale": "The on-device thesis plays out over a multi-year consumer hardware refresh cycle, during which macro shocks, rate volatility, and a possible datacenter capex correction could all disrupt equity valuations. Gold is the deepest pool available and anchors the basket against those disruptions without requiring a view on which hyperscaler loses most."
+      },
+      {
+        "symbol": "SPYx",
+        "weightBps": 2500,
+        "rationale": "The shift to on-device inference is a multi-year structural story; SPY captures broad market participation in the hardware refresh cycle and keeps the core floor well above minimum. If the thesis is early and the market keeps rewarding cloud capex, S&P exposure dampens the drawdown while the on-device dynamic plays out."
+      }
+    ],
+    "primaryExpression": "AAPLx",
+    "falsifier": {
+      "claim": "On-device inference economics are improving fast enough to shift the marginal consumer query away from cloud endpoints within the thesis horizon.",
+      "observable": "Apple's reported on-device versus server-side Siri/Apple Intelligence query split, disclosed in product announcements or developer documentation, combined with NVIDIA data center revenue growth rate in quarterly earnings.",
+      "breachCondition": "NVIDIA data center revenue grows more than 25% year-over-year for two consecutive quarters AND Apple makes no material announcement expanding on-device model capability — indicating the marginal query is still flowing to the cloud.",
+      "horizon": "12M"
+    },
+    "confidence": "medium"
+  },
+  "costs": [
+    {
+      "model": "claude-sonnet-4-6",
+      "inputTokens": 132,
+      "outputTokens": 806,
+      "cacheWriteTokens": 0,
+      "cacheReadTokens": 3130,
+      "usd": 0.013425,
+      "unpriced": false
+    },
+    {
+      "model": "claude-sonnet-4-6",
+      "inputTokens": 1048,
+      "outputTokens": 768,
+      "cacheWriteTokens": 0,
+      "cacheReadTokens": 3130,
+      "usd": 0.015603,
+      "unpriced": false
+    }
+  ],
+  "totalUsd": 0.029027999999999998
+}

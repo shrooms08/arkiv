@@ -8,6 +8,15 @@ import { allRecords } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Tickers with cover art committed under `public/covers/`.
+ *
+ * Listed rather than probed because this renders on the server and a missing
+ * file should degrade to no cover, not to a broken image. Art arrives on its own
+ * track; a basket without one renders without a cover band by design.
+ */
+const COVERS = new Set(["AIBOTTLE", "STICKYINF", "SCRATE"]);
+
 const FAQ = [
   {
     id: "what",
@@ -133,6 +142,8 @@ export default function HomePage() {
                   horizon={t.falsifier.horizon}
                   confidence={t.confidence}
                   segments={segments}
+                  cover={COVERS.has(t.ticker) ? `/covers/${t.ticker}.png` : undefined}
+                  coverAlt={`${t.title}, cover art`}
                   href={`/underwrite/${r.thesisHash}`}
                 />
               );
