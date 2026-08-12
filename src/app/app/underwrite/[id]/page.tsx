@@ -63,6 +63,10 @@ export default async function UnderwritePage({
               index: serial,
               horizon: t.falsifier.horizon,
               segments,
+              // No serial until it is minted, so the cover carries the hash
+              // rather than deriving ARKIV-0000 from an index that means
+              // "not in the registry" rather than "the zeroth record".
+              serialLabel: serial > 0 ? undefined : shortHash,
             }}
           />
         </div>

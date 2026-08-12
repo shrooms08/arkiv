@@ -8,6 +8,8 @@ export interface CoverFallback {
   index: number;
   horizon?: string;
   segments: RibbonSegment[];
+  /** Stands in for the serial when the record has no registry index yet. */
+  serialLabel?: string;
 }
 
 export interface CoverImageProps {
@@ -64,6 +66,7 @@ export function CoverImage({
         index={fallback.index}
         horizon={fallback.horizon}
         segments={fallback.segments}
+        serialLabel={fallback.serialLabel}
       />
     </div>
   );

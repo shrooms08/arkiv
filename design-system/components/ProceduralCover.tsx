@@ -9,6 +9,12 @@ export interface ProceduralCoverProps {
   segments?: RibbonSegment[];
   pad?: number;
   prefix?: string;
+  /**
+   * Replaces the computed serial. Pass this when the record has no registry
+   * index yet: a serial is assigned at mint, so deriving one from index 0 would
+   * print ARKIV-0000 into the artwork and invent a filing that does not exist.
+   */
+  serialLabel?: string;
   className?: string;
 }
 
@@ -34,10 +40,12 @@ export function ProceduralCover({
   segments = [],
   pad = 4,
   prefix = "ARKIV",
+  serialLabel,
   className = "",
 }: ProceduralCoverProps) {
   const segs = segments.filter(Boolean);
-  const serial = `${prefix}-${String(Math.max(0, Math.floor(index))).padStart(pad, "0")}`;
+  const serial =
+    serialLabel ?? `${prefix}-${String(Math.max(0, Math.floor(index))).padStart(pad, "0")}`;
   const maxW = Math.max(1, ...segs.map((s) => s.weightBps || 0));
   const primary = segs.find((s) => s.isPrimary);
 
@@ -49,7 +57,9 @@ export function ProceduralCover({
     <div className={`ark-proccover ${className}`.trim()} aria-hidden="true">
       <div className="ark-proccover__plate">
         <div className="ark-proccover__stack">
-          <span className="ark-proccover__label">Filed record</span>
+          <span className="ark-proccover__label">
+            {serialLabel ? "Not yet filed" : "Filed record"}
+          </span>
           <span className="ark-proccover__serial">{serial}</span>
         </div>
         <div className="ark-proccover__stack">
