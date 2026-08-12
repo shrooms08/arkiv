@@ -1,0 +1,30 @@
+{
+  "name": "@arkiv/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Arkiv design system: tokens and React components for the thesis archive.",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./tokens/tokens.css": "./tokens/tokens.css",
+    "./components/arkiv.css": "./components/arkiv.css",
+    "./fonts/saira-condensed.css": "./fonts/saira-condensed.css"
+  },
+  "files": ["tokens", "components", "fixtures", "fonts", "index.ts", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.7",
+    "typescript": "^5.9.3"
+  },
+  "sideEffects": ["*.css"]
+}

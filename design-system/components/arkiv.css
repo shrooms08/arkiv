@@ -1,0 +1,1104 @@
+/**
+ * Component styles for the Arkiv design system.
+ *
+ * Rule: no literal values. Every declaration resolves through a token from
+ * `tokens/tokens.css`. The only literals are structural constants that are not
+ * design decisions (0, 100%, 1fr, currentColor).
+ *
+ * Interaction states live here rather than in inline styles, because hover,
+ * focus-visible, active and disabled cannot be expressed inline.
+ */
+
+/* ===================================================================
+ * Box model
+ *
+ * Scoped border-box reset. Without this the package depends on the host app
+ * having its own reset, and any component with both a token size and padding
+ * silently renders larger than its token says — an AssetRow with
+ * `min-height: 56px` and 12px padding measures 81px under content-box.
+ * Scoped to the system's own classes so it cannot disturb a host page.
+ * =============================================================== */
+
+.ark,
+.ark *,
+.ark *::before,
+.ark *::after,
+[class^="ark-"],
+[class*=" ark-"],
+[class^="ark-"]::before,
+[class^="ark-"]::after,
+[class*=" ark-"]::before,
+[class*=" ark-"]::after {
+  box-sizing: border-box;
+}
+
+/* ===================================================================
+ * Primitives
+ * =============================================================== */
+
+.ark {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+}
+
+.ark-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ark-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  /* Gutter ramp, measured: 16px < 768, 24px at 768, 32px at 1024 and above. */
+  padding-inline: var(--space-4);
+}
+@media (min-width: 48rem) {
+  .ark-container {
+    padding-inline: var(--space-6);
+  }
+}
+@media (min-width: 64rem) {
+  .ark-container {
+    padding-inline: var(--space-8);
+  }
+}
+
+.ark-section {
+  padding-block: var(--section-y-mobile);
+}
+@media (min-width: 64rem) {
+  .ark-section {
+    padding-block: var(--section-y);
+  }
+}
+
+/* ===================================================================
+ * Button
+ * =============================================================== */
+
+.ark-btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-ink);
+  --btn-border: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--space-10);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base),
+    transform var(--duration-instant) var(--ease-standard);
+}
+
+.ark-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+.ark-btn:active:not(:disabled) {
+  transform: translateY(var(--border-width));
+}
+.ark-btn:disabled,
+.ark-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ark-btn--primary {
+  --btn-bg: var(--color-structure);
+  --btn-fg: var(--color-structure-foreground);
+  --btn-border: var(--color-structure);
+}
+.ark-btn--primary:hover:not(:disabled) {
+  --btn-bg: var(--color-structure-hover);
+  --btn-border: var(--color-structure-hover);
+}
+.ark-btn--primary:active:not(:disabled) {
+  --btn-bg: var(--color-structure-active);
+}
+
+.ark-btn--secondary {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-structure);
+  --btn-border: var(--color-structure-border);
+}
+.ark-btn--secondary:hover:not(:disabled) {
+  --btn-bg: var(--color-structure-subtle);
+  --btn-border: var(--color-structure);
+}
+
+.ark-btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-ink-muted);
+  --btn-border: transparent;
+}
+.ark-btn--ghost:hover:not(:disabled) {
+  --btn-bg: var(--color-surface-sunken);
+  --btn-fg: var(--color-ink);
+}
+
+/* Verdict is reserved for the falsifier and the primary expression. A verdict
+   button is therefore rare by design — it is not a third visual rank. */
+.ark-btn--verdict {
+  --btn-bg: var(--color-verdict);
+  --btn-fg: var(--color-verdict-foreground);
+  --btn-border: var(--color-verdict);
+}
+.ark-btn--verdict:hover:not(:disabled) {
+  --btn-bg: var(--color-verdict-hover);
+  --btn-border: var(--color-verdict-hover);
+}
+
+.ark-btn--sm {
+  font-size: var(--text-micro);
+  min-height: var(--space-8);
+  padding: var(--space-1) var(--space-3);
+}
+.ark-btn--lg {
+  font-size: var(--text-body);
+  min-height: var(--space-12);
+  padding: var(--space-3) var(--space-6);
+}
+
+.ark-btn__spinner {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  border: var(--border-width-emphasis) solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-full);
+  animation: ark-spin var(--duration-slower) linear infinite;
+}
+@keyframes ark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===================================================================
+ * Card — depth from rule + surface shift, never shadow (measured)
+ * =============================================================== */
+
+.ark-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-flat);
+  transition:
+    border-color var(--transition-base),
+    background-color var(--transition-base);
+}
+.ark-card--padded {
+  padding: var(--card-padding);
+}
+.ark-card--sunken {
+  background: var(--color-surface-sunken);
+}
+.ark-card--interactive {
+  cursor: pointer;
+}
+.ark-card--interactive:hover {
+  border-color: var(--color-rule-strong);
+  background: var(--color-surface-raised);
+}
+.ark-card--interactive:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+/* A card carrying a verdict gets a gold left edge, not a gold fill. */
+.ark-card--verdict {
+  border-inline-start: var(--border-width-emphasis) solid var(--color-verdict);
+}
+
+.ark-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--card-padding);
+  padding-block-end: var(--space-3);
+}
+.ark-card__body {
+  padding-inline: var(--card-padding);
+  flex: 1 1 auto;
+}
+.ark-card__footer {
+  padding: var(--space-3) var(--card-padding) var(--card-padding);
+  border-block-start: var(--border-width) solid var(--color-rule);
+  margin-block-start: var(--space-4);
+}
+
+/* ===================================================================
+ * Badge
+ * =============================================================== */
+
+.ark-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-nano);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
+  border: var(--border-width) solid transparent;
+  white-space: nowrap;
+}
+.ark-badge--neutral {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-muted);
+  border-color: var(--color-rule);
+}
+.ark-badge--structure {
+  background: var(--color-structure-subtle);
+  color: var(--color-structure);
+  border-color: var(--color-structure-border);
+}
+.ark-badge--verdict {
+  background: var(--color-verdict-subtle);
+  color: var(--color-verdict-active);
+  border-color: var(--color-verdict-border);
+}
+.ark-badge--outline {
+  background: transparent;
+  color: var(--color-ink-muted);
+  border-color: var(--color-rule-strong);
+}
+
+/* ===================================================================
+ * SerialNumber
+ * =============================================================== */
+
+.ark-serial {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-subtle);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ark-serial--emphasis {
+  color: var(--color-ink-muted);
+}
+
+/* ===================================================================
+ * RoleLabel
+ * =============================================================== */
+
+.ark-role {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-nano);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+}
+.ark-role--expression {
+  color: var(--color-verdict-active);
+}
+.ark-role__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: currentColor;
+  flex: none;
+}
+
+/* ===================================================================
+ * WeightNumeral — the number is the largest thing in the row
+ * =============================================================== */
+
+.ark-weight {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-stretch: var(--font-display-stretch);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+.ark-weight--sm { font-size: var(--text-display-l); }   /* 56px */
+.ark-weight--md { font-size: var(--text-display-xl); }  /* 88px */
+.ark-weight--lg { font-size: calc(var(--text-display-xl) * 1.3636); } /* 120px */
+.ark-weight--verdict { color: var(--color-verdict-active); }
+.ark-weight__unit {
+  font-size: 0.4em;
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-ink-subtle);
+  margin-inline-start: 0.08em;
+}
+
+/* ===================================================================
+ * AllocationRibbon — one continuous band, not a stack of bars
+ * =============================================================== */
+
+.ark-ribbon-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ark-ribbon {
+  display: flex;
+  width: 100%;
+  /* Primary segment is taller and breaks the top edge, so the track needs
+     headroom equal to the overshoot. */
+  padding-block-start: calc(
+    var(--ribbon-height-primary) - var(--ribbon-height)
+  );
+  align-items: flex-end;
+  border-radius: var(--radius-sm);
+  overflow: visible;
+}
+
+.ark-ribbon__seg {
+  position: relative;
+  height: var(--ribbon-height);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-inline: var(--space-2);
+  background: var(--color-structure);
+  color: var(--color-structure-foreground);
+  border-inline-end: var(--border-width) solid var(--color-surface);
+  overflow: hidden;
+  cursor: default;
+  transition:
+    height var(--transition-base),
+    filter var(--transition-base),
+    transform var(--transition-base);
+}
+.ark-ribbon__seg:first-child {
+  border-start-start-radius: var(--radius-sm);
+  border-end-start-radius: var(--radius-sm);
+}
+.ark-ribbon__seg:last-child {
+  border-inline-end: 0;
+  border-start-end-radius: var(--radius-sm);
+  border-end-end-radius: var(--radius-sm);
+}
+/* Alternating tint keeps adjacent blue segments legible without introducing a
+   second hue — structure stays one colour. */
+.ark-ribbon__seg:nth-child(even) {
+  background: var(--color-structure-hover);
+}
+.ark-ribbon__seg--primary {
+  height: var(--ribbon-height-primary);
+  background: var(--color-verdict);
+  color: var(--color-verdict-foreground);
+  border-start-start-radius: var(--radius-xs);
+  border-start-end-radius: var(--radius-xs);
+}
+.ark-ribbon__seg:hover {
+  filter: brightness(1.08);
+  transform: translateY(calc(var(--space-1) * -1));
+}
+.ark-ribbon__seg:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ark-ribbon__label {
+  font-size: var(--text-nano);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Segments too narrow for a label hide it and reveal it on hover instead. */
+.ark-ribbon__seg--narrow .ark-ribbon__label {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+.ark-ribbon__seg--narrow:hover .ark-ribbon__label,
+.ark-ribbon__seg--narrow:focus-visible .ark-ribbon__label {
+  opacity: 1;
+}
+
+.ark-ribbon__caption {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-nano);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+/* ===================================================================
+ * AssetRow
+ * =============================================================== */
+
+.ark-assetrow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--row-height);
+  padding: var(--row-padding-y) var(--row-padding-x);
+  border-block-end: var(--border-width) solid var(--color-rule);
+  transition: background-color var(--transition-base);
+}
+.ark-assetrow:last-child {
+  border-block-end: 0;
+}
+.ark-assetrow:hover {
+  background: var(--color-surface-sunken);
+}
+.ark-assetrow--primary {
+  border-inline-start: var(--border-width-emphasis) solid var(--color-verdict);
+  padding-inline-start: calc(var(--row-padding-x) - var(--border-width-emphasis));
+}
+
+.ark-assetrow__icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border-radius: var(--radius-full);
+  background: var(--color-structure-subtle);
+  color: var(--color-structure);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-nano);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-normal);
+  flex: none;
+  overflow: hidden;
+}
+.ark-assetrow__icon--verdict {
+  background: var(--color-verdict-subtle);
+  color: var(--color-verdict-active);
+}
+
+.ark-assetrow__ident {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ark-assetrow__symbol {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  line-height: 1;
+}
+.ark-assetrow__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.ark-assetrow__name {
+  font-size: var(--text-micro);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ark-assetrow__addr {
+  font-family: var(--font-mono);
+  font-size: var(--text-nano);
+  color: var(--color-ink-subtle);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  transition: color var(--transition-base);
+  /* The address is already abbreviated, so it must never be the thing that
+     gives under width pressure — a break mid-string reads as corrupted data,
+     and the second line pushes the row past its measured height. The name
+     beside it has the ellipsis and absorbs the squeeze instead. */
+  white-space: nowrap;
+  flex: none;
+}
+.ark-assetrow__addr:hover {
+  color: var(--color-structure);
+}
+.ark-assetrow__addr:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+
+.ark-assetrow__weight {
+  font-family: var(--font-display);
+  font-stretch: var(--font-display-stretch);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-h1);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+  text-align: end;
+  color: var(--color-ink);
+}
+.ark-assetrow__weight--verdict {
+  color: var(--color-verdict-active);
+}
+
+/* ===================================================================
+ * FalsifierBlock — reads as a filed clause, not body copy
+ * =============================================================== */
+
+.ark-falsifier {
+  border: var(--border-width) solid var(--color-verdict-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.ark-falsifier--resolved {
+  border-color: var(--color-rule);
+  background: var(--color-surface-sunken);
+}
+
+.ark-falsifier__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-verdict-subtle);
+  border-block-end: var(--border-width) solid var(--color-verdict-border);
+}
+.ark-falsifier--resolved .ark-falsifier__header {
+  background: transparent;
+  border-block-end-color: var(--color-rule);
+}
+.ark-falsifier__title {
+  font-size: var(--text-nano);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-verdict-active);
+}
+.ark-falsifier--resolved .ark-falsifier__title {
+  color: var(--color-ink-subtle);
+}
+
+.ark-falsifier__parts {
+  display: flex;
+  flex-direction: column;
+}
+.ark-falsifier__part {
+  padding: var(--space-3) var(--space-4);
+  border-block-end: var(--border-width) solid var(--color-rule);
+}
+.ark-falsifier__part:last-child {
+  border-block-end: 0;
+}
+/* Each part is visually distinct: claim is the assertion, observable is the
+   instrument, breach is the trigger. Different weight, colour and background. */
+.ark-falsifier__part--claim {
+  background: var(--color-surface);
+}
+.ark-falsifier__part--observable {
+  background: var(--color-surface-sunken);
+}
+.ark-falsifier__part--breach {
+  background: var(--color-breach-surface);
+}
+
+.ark-falsifier__label {
+  display: block;
+  font-size: var(--text-nano);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  margin-block-end: var(--space-1);
+}
+.ark-falsifier__text {
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  margin: 0;
+}
+.ark-falsifier__part--claim .ark-falsifier__text {
+  font-weight: var(--weight-medium);
+}
+.ark-falsifier__part--observable .ark-falsifier__text {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-ink-muted);
+}
+.ark-falsifier__part--breach .ark-falsifier__text {
+  font-weight: var(--weight-medium);
+  color: var(--color-breach);
+}
+
+/* Horizon as a thin ruled track, not a progress bar with a fill gradient. */
+.ark-falsifier__horizon {
+  padding: var(--space-3) var(--space-4);
+  border-block-start: var(--border-width) solid var(--color-rule);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ark-falsifier__track {
+  position: relative;
+  height: var(--border-width-emphasis);
+  background: var(--color-rule);
+  border-radius: var(--radius-full);
+}
+.ark-falsifier__fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  background: var(--color-verdict);
+  border-radius: var(--radius-full);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+.ark-falsifier--resolved .ark-falsifier__fill {
+  background: var(--color-resolved);
+}
+.ark-falsifier__ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-nano);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+/* ===================================================================
+ * BasketCard
+ * =============================================================== */
+
+.ark-basketcard {
+  min-height: var(--card-min-height);
+}
+.ark-basketcard__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ark-basketcard__ident {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ark-basketcard__name {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink);
+  margin: 0;
+}
+.ark-basketcard__ticker {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  letter-spacing: var(--tracking-label);
+}
+.ark-basketcard__thesis {
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ark-basketcard__stack {
+  display: flex;
+  align-items: center;
+}
+.ark-basketcard__chip {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-surface);
+  color: var(--color-ink-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-nano);
+  font-weight: var(--weight-bold);
+  margin-inline-start: calc(var(--space-2) * -1);
+  flex: none;
+}
+.ark-basketcard__chip:first-child {
+  margin-inline-start: 0;
+}
+.ark-basketcard__chip--overflow {
+  background: var(--color-structure-subtle);
+  color: var(--color-structure);
+}
+
+/* The metric slot carries the primary expression and the falsifier horizon.
+   Never a return figure — see README, divergence 1. */
+.ark-basketcard__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.ark-basketcard__metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ark-basketcard__metric-label {
+  font-size: var(--text-nano);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.ark-basketcard__metric-value {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ark-basketcard__metric-value--verdict {
+  color: var(--color-verdict-active);
+}
+
+/* ===================================================================
+ * Nav
+ * =============================================================== */
+
+.ark-nav {
+  border-block-end: var(--border-width) solid var(--color-rule);
+  background: var(--color-surface);
+}
+.ark-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: var(--space-16);
+}
+.ark-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+.ark-nav__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ark-nav__link {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+  transition:
+    color var(--transition-base),
+    background-color var(--transition-base);
+}
+.ark-nav__link:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-sunken);
+}
+.ark-nav__link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+.ark-nav__link[aria-current="page"] {
+  color: var(--color-structure);
+  background: var(--color-structure-subtle);
+}
+.ark-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ===================================================================
+ * Accordion
+ * =============================================================== */
+
+.ark-accordion {
+  border-block-start: var(--border-width) solid var(--color-rule);
+}
+.ark-accordion__item {
+  border-block-end: var(--border-width) solid var(--color-rule);
+}
+.ark-accordion__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-2);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  transition: color var(--transition-base);
+}
+.ark-accordion__trigger:hover {
+  color: var(--color-structure);
+}
+.ark-accordion__trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+.ark-accordion__marker {
+  flex: none;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  position: relative;
+  transition: transform var(--transition-base);
+}
+.ark-accordion__marker::before,
+.ark-accordion__marker::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 50%;
+  height: var(--border-width);
+  background: currentColor;
+}
+.ark-accordion__marker::after {
+  transform: rotate(90deg);
+  transition: opacity var(--transition-base);
+}
+.ark-accordion__trigger[aria-expanded="true"] .ark-accordion__marker::after {
+  opacity: 0;
+}
+.ark-accordion__panel {
+  padding: 0 var(--space-2) var(--space-4);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/* ===================================================================
+ * Input and Textarea
+ * =============================================================== */
+
+.ark-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ark-field__label {
+  font-size: var(--text-micro);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.ark-field__hint {
+  font-size: var(--text-micro);
+  color: var(--color-ink-subtle);
+}
+.ark-field__hint--error {
+  color: var(--color-breach);
+}
+.ark-field__counter {
+  font-family: var(--font-mono);
+  font-size: var(--text-nano);
+  color: var(--color-ink-subtle);
+  font-variant-numeric: tabular-nums;
+  align-self: flex-end;
+}
+
+.ark-input,
+.ark-textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  background: var(--color-field);
+  border: var(--border-width) solid var(--color-field-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    background-color var(--transition-base);
+}
+.ark-input::placeholder,
+.ark-textarea::placeholder {
+  color: var(--color-ink-subtle);
+}
+.ark-input:hover:not(:disabled),
+.ark-textarea:hover:not(:disabled) {
+  border-color: var(--color-rule-strong);
+}
+.ark-input:focus,
+.ark-textarea:focus {
+  outline: none;
+  border-color: var(--color-structure);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-structure-subtle);
+}
+.ark-input:disabled,
+.ark-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ark-input[aria-invalid="true"],
+.ark-textarea[aria-invalid="true"] {
+  border-color: var(--color-breach);
+}
+
+/* The thesis field is the product's front door, so it gets a heavier resting
+   state and a distinctly larger focus treatment than a generic input. */
+.ark-textarea--thesis {
+  min-height: calc(var(--space-40) + var(--space-8));
+  font-size: var(--text-h4);
+  line-height: var(--leading-relaxed);
+  padding: var(--space-5);
+  border-width: var(--border-width-emphasis);
+  border-color: var(--color-rule-strong);
+  resize: vertical;
+}
+.ark-textarea--thesis:focus {
+  border-color: var(--color-structure);
+  box-shadow:
+    0 0 0 var(--space-1) var(--color-structure-subtle),
+    var(--elevation-overlay);
+  background: var(--color-surface);
+}
+
+/* ===================================================================
+ * Footer
+ * =============================================================== */
+
+.ark-footer {
+  border-block-start: var(--border-width) solid var(--color-rule);
+  background: var(--color-surface-sunken);
+  padding-block: var(--space-12);
+}
+.ark-footer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+}
+@media (min-width: 48rem) {
+  .ark-footer__grid {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  }
+}
+.ark-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ark-footer__heading {
+  font-size: var(--text-nano);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.ark-footer__link {
+  font-size: var(--text-small);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+.ark-footer__link:hover {
+  color: var(--color-structure);
+}
+.ark-footer__link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ring);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.ark-footer__note {
+  font-size: var(--text-micro);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-subtle);
+  max-width: var(--container-prose);
+}
+.ark-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-start: var(--space-8);
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-width) solid var(--color-rule);
+}
+
+/* ===================================================================
+ * Grid helper for card listings (measured: 3 cols, 24px gap)
+ * =============================================================== */
+
+.ark-cardgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--grid-gap);
+}
+/* Measured column counts: 2 from 768px, 3 from 1280px. The reference stays at
+   2 columns through 1024px, which is why the third column arrives at xl and
+   not at lg — a 3-up grid at 1024 gives a 320px card, below the point where a
+   two-line thesis and a metric row still read. */
+@media (min-width: 48rem) {
+  .ark-cardgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 80rem) {
+  .ark-cardgrid {
+    grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  }
+}
+
+/* Compact ribbon: card context. Shorter band, labels only on hover. */
+.ark-ribbon--compact {
+  --ribbon-height: 1.75rem;          /* 28px */
+  --ribbon-height-primary: 2.25rem;  /* 36px */
+}

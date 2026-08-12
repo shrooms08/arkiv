@@ -1,0 +1,8 @@
+# design-sync working state (see .design-sync/ for the committed inputs)
+.ds-sync/
+ds-bundle/
+dist/
+node_modules/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

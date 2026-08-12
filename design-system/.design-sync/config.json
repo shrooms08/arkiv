@@ -1,0 +1,34 @@
+{
+  "projectId": "8b524983-f4db-4cb3-982b-5797a2fd8b32",
+  "shape": "package",
+  "pkg": "@arkiv/design-system",
+  "globalName": "Arkiv",
+  "buildCmd": "../node_modules/.bin/tsc -p tsconfig.json",
+  "tsconfig": "tsconfig.json",
+  "extraFonts": ["fonts/saira-condensed.css"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "BasketCard": { "cardMode": "column" },
+    "Card": { "cardMode": "column" },
+    "CardHeader": { "cardMode": "column" },
+    "Nav": { "cardMode": "column" },
+    "RoleLabel": { "cardMode": "column" }
+  },
+  "componentSrcMap": {
+    "ButtonDemo": null,
+    "CardDemo": null,
+    "BadgeDemo": null,
+    "NavDemo": null,
+    "FooterDemo": null,
+    "AccordionDemo": null,
+    "InputDemo": null,
+    "TextareaDemo": null,
+    "SerialNumberDemo": null,
+    "RoleLabelDemo": null,
+    "WeightNumeralDemo": null,
+    "AllocationRibbonDemo": null,
+    "AssetRowDemo": null,
+    "FalsifierBlockDemo": null,
+    "BasketCardDemo": null
+  }
+}

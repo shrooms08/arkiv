@@ -1,0 +1,267 @@
+/**
+ * Arkiv design tokens.
+ *
+ * Two layers, deliberately:
+ *   1. RAW scale values (--space-*, --radius-*, --text-*). Measured, impersonal.
+ *   2. SEMANTIC aliases (--color-structure, --color-verdict, --color-rule…).
+ *      Components reference ONLY layer 2, so meaning can be re-pointed without
+ *      touching a component.
+ *
+ * Colour follows the shadcn convention: OKLCH, `name` / `name-foreground`.
+ * Every OKLCH value below was converted from the stated hex, not eyeballed.
+ *
+ * Scale values are derived from measurements of cesto.co and app.cesto.co taken
+ * 2026-08-11 at a 1440px viewport. See README.md for the measurement table and
+ * for the values marked UNDETERMINED.
+ */
+
+:root {
+  /* ---------------------------------------------------------------
+   * Spacing — base unit 4px (measured: --spacing .25rem)
+   * ------------------------------------------------------------- */
+  --space-unit: 0.25rem;
+  --space-0: 0;
+  --space-1: 0.25rem;   /*  4px */
+  --space-2: 0.5rem;    /*  8px */
+  --space-3: 0.75rem;   /* 12px — measured holdings-grid gap */
+  --space-4: 1rem;      /* 16px — measured panel padding */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px — measured card-grid gap */
+  --space-8: 2rem;      /* 32px — measured page gutter */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px — measured section padding, mobile */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+  --space-28: 7rem;     /* 112px — measured section padding, desktop */
+  --space-40: 10rem;    /* 160px */
+
+  /* Section rhythm, measured from landing <section> computed padding */
+  --section-y-mobile: var(--space-16);   /* 64px */
+  --section-y: var(--space-28);          /* 112px — most frequent pt/pb pair */
+  --section-gutter: var(--space-6);      /* 24px, measured pl/pr on section 1 */
+
+  /* ---------------------------------------------------------------
+   * Containers and grid — measured at 1440px viewport
+   * ------------------------------------------------------------- */
+  --container-max: 80rem;      /* 1280px — measured app max-width */
+  --container-content: 76rem;  /* 1216px — measured app content width */
+  --container-marketing: 72rem;/* 1152px — measured landing content width */
+  --container-prose: 42rem;    /* 672px  — measured, both properties */
+  --grid-gap: var(--space-6);  /* 24px, measured 3-col card grid */
+  --grid-gap-tight: var(--space-3); /* 12px, measured holdings grid */
+  --grid-cols: 3;              /* measured: 389.33px x 3 within 1216px */
+
+  /* ---------------------------------------------------------------
+   * Breakpoints (measured @media min-widths; all five stock Tailwind)
+   * ------------------------------------------------------------- */
+  --bp-sm: 40rem;   /*  640px */
+  --bp-md: 48rem;   /*  768px */
+  --bp-lg: 64rem;   /* 1024px */
+  --bp-xl: 80rem;   /* 1280px */
+  --bp-2xl: 96rem;  /* 1536px */
+
+  /* ---------------------------------------------------------------
+   * Type — faces are Arkiv's own choice, NOT the reference's.
+   * Only the ramp geometry is carried over.
+   * ------------------------------------------------------------- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Condensed display face for WeightNumeral. Saira Condensed ships with the
+     package (fonts/saira-condensed.css, weights 500/600, OFL) so the face is
+     never left to chance. The rest of the stack is the fallback path: widely
+     installed condensed faces, then a synthetic condensed via font-stretch. */
+  --font-display: "Saira Condensed", "Archivo Narrow", "Roboto Condensed",
+                  "Helvetica Neue Condensed", "Liberation Sans Narrow",
+                  ui-sans-serif, system-ui, sans-serif;
+  --font-display-stretch: 87.5%;
+
+  /* Ramp. px values measured from rendered reference; rem for accessibility. */
+  --text-display-xl: 5.5rem;   /* 88px, measured */
+  --text-display-l: 3.5rem;    /* 56px, measured */
+  --text-display-m: 2.625rem;  /* 42px, documented but UNDETERMINED in CSS */
+  --text-h1: 1.875rem;         /* 30px, measured app h1 */
+  --text-h2: 1.5rem;           /* 24px, measured */
+  --text-h3: 1.25rem;          /* 20px, measured */
+  --text-h4: 1.125rem;         /* 18px, measured */
+  --text-body: 1rem;           /* 16px, measured */
+  --text-small: 0.875rem;      /* 14px, measured */
+  --text-micro: 0.75rem;       /* 12px, measured */
+  --text-nano: 0.625rem;       /* 10px, measured badge size */
+
+  /* Line heights, measured as computed px / font px */
+  --leading-display: 1.05;  /* 92.4/88 measured */
+  --leading-tight: 1.2;     /* 36/30 measured */
+  --leading-snug: 1.33;     /* 32/24 measured */
+  --leading-normal: 1.5;    /* 24/16 measured */
+  --leading-relaxed: 1.63;  /* 22.75/14 measured */
+
+  /* Tracking, measured */
+  --tracking-display: -0.02em;  /* -0.75px on 30px measured = -0.025em */
+  --tracking-normal: 0;
+  --tracking-label: 0.05em;     /* 0.5px on 10px measured */
+  --tracking-caps: 0.1em;       /* 1.8px on 18px measured */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------------------------------------------------------------
+   * Radii — measured tally, app: 8px(24) full(21) 4px(12) 10px(4) 12px(3)
+   * ------------------------------------------------------------- */
+  --radius-xs: 0.25rem;   /*  4px */
+  --radius-sm: 0.5rem;    /*  8px — most frequent measured */
+  --radius-md: 0.625rem;  /* 10px */
+  --radius-lg: 0.75rem;   /* 12px — measured card radius */
+  --radius-xl: 1.125rem;  /* 18px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* ---------------------------------------------------------------
+   * Borders — measured: 1px is the ONLY width in use on either site
+   * ------------------------------------------------------------- */
+  --border-width: 1px;
+  --border-width-emphasis: 2px; /* Arkiv addition, for the verdict edge */
+
+  /* ---------------------------------------------------------------
+   * Elevation.
+   * Measured: the landing page uses ZERO box-shadows. Depth is carried by
+   * a 1px rule plus a background shift. Both shadows below were measured on
+   * app.cesto.co and are reserved for overlays only.
+   * ------------------------------------------------------------- */
+  --elevation-flat: none;
+  --elevation-overlay: 0 10px 15px -3px oklch(0 0 0 / 0.2),
+                       0 4px 6px -4px oklch(0 0 0 / 0.2);
+  --elevation-modal: 0 25px 50px -12px oklch(0 0 0 / 0.5);
+
+  /* ---------------------------------------------------------------
+   * Motion — measured durations and easings
+   * 0.15s (209 uses), 0.3s (43), 0.5s (38), 0.2s (1)
+   * ------------------------------------------------------------- */
+  --duration-instant: 0.1s;
+  --duration-fast: 0.15s;    /* measured default */
+  --duration-base: 0.2s;
+  --duration-slow: 0.3s;
+  --duration-slower: 0.5s;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);  /* measured, dominant */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);         /* measured */
+  --transition-base: var(--duration-fast) var(--ease-standard);
+
+  /* ---------------------------------------------------------------
+   * Density targets (Arkiv, derived from the measurement in README)
+   * ------------------------------------------------------------- */
+  --row-height: 3.5rem;        /* 56px */
+  --row-height-comfortable: 4rem;
+  --row-padding-y: var(--space-3);
+  --row-padding-x: var(--space-4);
+  --card-padding: var(--space-5);
+  --card-min-height: 25rem;    /* 400px; reference card measured 440px */
+  --icon-sm: 1.25rem;  /* 20px */
+  --icon-md: 1.5rem;   /* 24px — measured reference icon size */
+  --icon-lg: 2rem;     /* 32px */
+  --ribbon-height: 2.75rem;      /* 44px */
+  --ribbon-height-primary: 3.5rem; /* 56px — primary breaks the top edge */
+
+  /* ===============================================================
+   * COLOUR — raw brand values, converted from hex to OKLCH
+   * =============================================================== */
+  --blue-500: oklch(0.4376 0.2028 265.92);   /* #1D3FBF */
+  --blue-600: oklch(0.3776 0.2028 265.92);
+  --blue-700: oklch(0.3176 0.2028 265.92);
+  --blue-muted: oklch(0.4376 0.0568 265.92);
+  --gold-500: oklch(0.8058 0.1241 81.41);    /* #E8B75A */
+  --gold-600: oklch(0.7458 0.1241 81.41);
+  --gold-700: oklch(0.6858 0.1241 81.41);
+  --gold-muted: oklch(0.8058 0.0348 81.41);
+  --near-black: oklch(0.1998 0.0086 264.36); /* #14161A */
+  --bone: oklch(0.9457 0.0096 93.57);        /* #EFEDE6 */
+  --off-white: oklch(0.9668 0.0054 95.10);   /* #F5F4F0 */
+
+  /* ===============================================================
+   * SEMANTIC LAYER — one colour, one meaning, everywhere
+   * =============================================================== */
+
+  /* Structure: primary actions, links, chrome. Blue and only blue. */
+  --color-structure: var(--blue-500);
+  --color-structure-hover: var(--blue-600);
+  --color-structure-active: var(--blue-700);
+  --color-structure-foreground: var(--off-white);
+  --color-structure-subtle: oklch(0.4376 0.2028 265.92 / 0.08);
+  --color-structure-border: oklch(0.4376 0.2028 265.92 / 0.35);
+
+  /* Verdict: primary expression, falsifier, breach. Gold and only gold. */
+  --color-verdict: var(--gold-500);
+  --color-verdict-hover: var(--gold-600);
+  --color-verdict-active: var(--gold-700);
+  --color-verdict-foreground: var(--near-black);
+  --color-verdict-subtle: oklch(0.8058 0.1241 81.41 / 0.12);
+  --color-verdict-border: oklch(0.8058 0.1241 81.41 / 0.45);
+
+  /* Surfaces */
+  --color-canvas: var(--off-white);
+  --color-surface: oklch(1 0 0);
+  --color-surface-raised: var(--bone);
+  --color-surface-sunken: oklch(0.9457 0.0096 93.57 / 0.5);
+
+  /* Ink */
+  --color-ink: var(--near-black);
+  --color-ink-muted: oklch(0.4800 0.0086 264.36);
+  --color-ink-subtle: oklch(0.6200 0.0086 264.36);
+  --color-ink-inverse: var(--off-white);
+
+  /* Rules and fields */
+  --color-rule: oklch(0.1998 0.0086 264.36 / 0.14);
+  --color-rule-strong: oklch(0.1998 0.0086 264.36 / 0.28);
+  --color-field: var(--color-surface);
+  --color-field-border: oklch(0.1998 0.0086 264.36 / 0.22);
+  --color-ring: var(--blue-500);
+
+  /* States. Breach is verdict-coloured by rule: gold means verdict. */
+  --color-breach: var(--gold-700);
+  --color-breach-surface: var(--color-verdict-subtle);
+  --color-resolved: var(--color-ink-subtle);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+.dark {
+  --color-canvas: var(--near-black);
+  --color-surface: oklch(0.2400 0.0086 264.36);
+  --color-surface-raised: oklch(0.2800 0.0086 264.36);
+  --color-surface-sunken: oklch(0.1700 0.0086 264.36);
+
+  --color-ink: var(--off-white);
+  --color-ink-muted: oklch(0.7400 0.0054 95.10);
+  --color-ink-subtle: oklch(0.5800 0.0054 95.10);
+  --color-ink-inverse: var(--near-black);
+
+  --color-rule: oklch(0.9668 0.0054 95.10 / 0.14);
+  --color-rule-strong: oklch(0.9668 0.0054 95.10 / 0.26);
+  --color-field: oklch(0.2400 0.0086 264.36);
+  --color-field-border: oklch(0.9668 0.0054 95.10 / 0.20);
+
+  /* Blue at L=0.44 is too dark to read on near-black; lift it for dark mode
+     while holding hue and chroma so it stays the same colour. */
+  --color-structure: oklch(0.6200 0.1780 265.92);
+  --color-structure-hover: oklch(0.6800 0.1780 265.92);
+  --color-structure-active: oklch(0.5600 0.1780 265.92);
+  --color-structure-foreground: var(--near-black);
+  --color-structure-subtle: oklch(0.6200 0.1780 265.92 / 0.16);
+  --color-structure-border: oklch(0.6200 0.1780 265.92 / 0.45);
+  --color-ring: oklch(0.6200 0.1780 265.92);
+
+  --color-verdict-subtle: oklch(0.8058 0.1241 81.41 / 0.16);
+  --color-breach: var(--gold-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0s;
+    --duration-fast: 0s;
+    --duration-base: 0s;
+    --duration-slow: 0s;
+    --duration-slower: 0s;
+  }
+}
