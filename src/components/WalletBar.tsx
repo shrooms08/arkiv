@@ -49,11 +49,16 @@ function useInjectedProvider(): boolean | null {
 /**
  * Wallet control for the nav's action slot.
  *
- * Four states, and the one that matters most on a phone is the fourth: a
- * browser with no wallet at all. Arkiv ships only the injected connector, so
- * there is genuinely nothing to connect to in mobile Safari or stock Chrome.
- * Saying that plainly, and naming a way through, is better than an enabled
- * button that does nothing when tapped.
+ * Four states. The fourth is a browser with no injected provider, which is
+ * every mobile Safari and stock Chrome, and it points at the OKX Wallet
+ * browser.
+ *
+ * That is not an apology for a missing connector. Arkiv is an X Layer app, and
+ * the OKX Wallet browser is where an X Layer wallet already is: on the right
+ * chain, holding the OKB that pays for gas, connecting with no pairing step.
+ * WalletConnect would be a second-best route to the same place. What would be
+ * wrong is an enabled button that does nothing when tapped, which is what this
+ * replaced.
  */
 export function WalletBar() {
   const { address, isConnected } = useAccount();
@@ -67,14 +72,20 @@ export function WalletBar() {
       return (
         <div className="wallet-bar wallet-none">
           <p className="wallet-none__text">
-            No wallet in this browser. Arkiv connects to an injected wallet, and mobile
-            Safari and Chrome do not provide one.
+            <strong>Open this in OKX Wallet to sign.</strong> Arkiv runs on X Layer, and
+            the OKX Wallet browser is where an X Layer wallet already lives: it arrives on
+            the right chain, holds the OKB that pays for gas, and connects without a
+            pairing step.
           </p>
           <p className="wallet-none__text">
-            Open <strong>arkiv-protocol.vercel.app</strong> inside a wallet&rsquo;s own
-            browser, such as <strong>OKX Wallet</strong>, and connect there. Everything
-            except signing works without a wallet: the archive, every thesis, every
-            falsifier and every basket reads fine from here.
+            Paste <strong>arkiv-protocol.vercel.app</strong> into the browser inside OKX
+            Wallet. Nothing else changes: this is the same site, the same contracts, the
+            same testnet.
+          </p>
+          <p className="wallet-none__text">
+            Reading needs no wallet at all. The archive, every thesis, every falsifier and
+            every basket&rsquo;s live composition and exit value all work from right here.
+            A wallet is only needed to sign.
           </p>
         </div>
       );

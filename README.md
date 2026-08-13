@@ -123,6 +123,16 @@ This section exists because a disclosed weakness is a smaller problem than a dis
 
 **R12, a liveness bug we caught.** Redeeming an entire supply could floor a leg's balance to zero and brick subsequent mints. Dead shares burned on first mint prevent it. Recorded because the bug was real and the guard is why it is not.
 
+**R14, duplicate thesis filing.** `createBasket` accepts any thesis URI, including one already recorded against an existing basket. Nothing on chain compares a new filing's hash to the filings already in the registry, so a caller can copy a thesis from the archive, file it, become `creatorOf` the copy, and collect the curator share on an argument they did not write. The app now reads the registry before filing, matches on thesis hash rather than on ticker or title, and routes a repeat filing into buying the existing basket instead. That closes the accidental path completely and the deliberate one not at all: anyone calling the contract directly can still do it. The real fix is rejecting a known hash in `createBasket`, which is a contract change and a redeploy, and is deliberately not being made against a live registry this close to submission. Full writeup in `docs/RISKS.md`.
+
+**The wagmi connector trap, for anyone forking this.** `wagmi/connectors` exports `walletConnect`, so it looks available and it is not. The connector dynamically imports `@walletconnect/ethereum-provider`, which is a peer dependency this project does not install. Wiring it up type-checks, builds, deploys, and then throws the first time a user taps connect. Arkiv ships `injected()` only, deliberately: adding WalletConnect needs the dependency plus a Reown Cloud project id, and neither is exercisable in a headless browser, which is where every other claim in this repository is checked. The mobile route is the OKX Wallet browser instead, which for an X Layer app is the native answer rather than a workaround.
+
+**A stranger found it first.** Nine hours after the registry went up, an address unaffiliated with this project, `0xDa0689785C6fDD754bc105691bC38398E4E4AfB4`, found Arkiv and ran the complete path: create, approve, mint. That is ARKIV-0007, filed 2026-08-12T23:22:12Z, and they still hold its entire supply.
+
+The size is measured rather than estimated: their mint recorded **$1.80 of fee**, $0.90 accrued to them as curator and $0.90 to the protocol, which at 30 bps is $600 of USDG through the mint. Both figures are readable on chain today from `curatorEarnings` and `protocolEarnings`.
+
+That run also exposed R14. The mint flow called `createBasket` unconditionally, so buying into an existing thesis produced a duplicate as a side effect rather than through any intent of theirs. Nothing about it was staged and nothing was removed afterwards. Their basket is verified alongside the seeded ones, 25 of 25. The archive is append-only, and a real filing is not deleted for being inconvenient.
+
 ---
 
 ## The core floor turned out to be an editor
