@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { AllocationRibbon, AssetRow, Badge, FalsifierBlock, SerialNumber, type RibbonSegment } from "@ds";
 import { AddressChip } from "@/components/AddressChip";
 import { CoverImage } from "@/components/CoverImage";
-import { MintPanel } from "@/components/MintPanel";
+import { MintSurface } from "@/components/MintSurface";
 import { WrapperDisclosure } from "@/components/WrapperDisclosure";
 import { assetBySymbol } from "@/config/assets";
 import { serialForThesis } from "@/lib/chain/deployments";
@@ -184,7 +184,7 @@ export default async function UnderwritePage({
           to disappear along with the mint UI when no deployment is configured. */}
       <WrapperDisclosure />
 
-      <MintPanel thesis={t} thesisHash={record.thesisHash} />
+      <MintSurface thesis={t} thesisHash={record.thesisHash} />
 
       <section className="thesis-risks">
         <div className="app-rule-heading">

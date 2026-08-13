@@ -221,6 +221,7 @@ export default function LandingPage() {
                     cover={art.kind === "photo" ? art.png : undefined}
                     coverWebp={art.kind === "photo" ? art.webp : undefined}
                     coverWebp720={art.kind === "photo" ? art.webp720 : undefined}
+                    coverWebp1080={art.kind === "photo" ? art.webp1080 : undefined}
                     coverAlt={art.kind === "photo" ? art.alt : undefined}
                     horizonForCover={t.falsifier.horizon}
                     href={`/app/underwrite/${r.thesisHash}`}

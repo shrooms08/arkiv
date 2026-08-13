@@ -41,6 +41,8 @@ export interface BasketCardProps {
   coverWebp?: string;
   /** Narrower WebP for card-sized slots, offered as the 720w srcset candidate. */
   coverWebp720?: string;
+  /** Middle rung, so a 3x phone does not jump to the full-width export. */
+  coverWebp1080?: string;
   /**
    * Falsifier horizon, passed to the procedural fallback so a coverless basket
    * still shows something drawn from its own record.
@@ -75,6 +77,7 @@ export function BasketCard({
   coverAlt,
   coverWebp,
   coverWebp720,
+  coverWebp1080,
   horizonForCover,
   href,
   onClick,
@@ -96,10 +99,20 @@ export function BasketCard({
                 type="image/webp"
                 srcSet={
                   coverWebp720
-                    ? `${coverWebp720} 720w, ${coverWebp} 1408w`
+                    ? [
+                        `${coverWebp720} 720w`,
+                        coverWebp1080 ? `${coverWebp1080} 1080w` : null,
+                        `${coverWebp} 1408w`,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
                     : coverWebp
                 }
-                sizes="(min-width: 80rem) 26rem, (min-width: 48rem) 45vw, 92vw"
+                /* Measured, not guessed. The card renders 343px inside a 393px
+                   viewport, so 92vw overstated it by 19px, which at dpr 3 asked
+                   for 1085 device pixels and skipped the 1080 candidate for the
+                   full-width export. */
+                sizes="(min-width: 80rem) 24rem, (min-width: 48rem) 45vw, calc(100vw - 3rem)"
               />
             )}
             <img

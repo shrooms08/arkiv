@@ -1,3 +1,4 @@
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { NetworkBanner } from "@/components/NetworkBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -17,6 +18,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SiteHeader />
       {children}
       <SiteFooter />
+      {/* Below 768px only. The bar is fixed, so the app shell reserves its
+          height plus the safe area at the bottom of every page rather than
+          letting it cover the last row of content. */}
+      <MobileTabBar />
     </>
   );
 }

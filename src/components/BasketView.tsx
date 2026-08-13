@@ -16,6 +16,7 @@ import {
 import { AddressChip } from "@/components/AddressChip";
 import { CoverImage } from "@/components/CoverImage";
 import { InvestPanel } from "@/components/InvestPanel";
+import { MobileActionSheet } from "@/components/MobileActionSheet";
 import { USDG, assetByAddress, assetBySymbol } from "@/config/assets";
 import { explainRevert } from "@/lib/chain/errors";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
@@ -25,6 +26,7 @@ import { fetchCurator, type CuratorRecord } from "@/lib/chain/curator";
 import { fetchExitValuesFor, valueComposition, valueOfLeg, type LegExitValue } from "@/lib/chain/exitValue";
 import { fetchMockRates } from "@/lib/chain/rates";
 import { resolveCover } from "@/lib/ui/covers";
+import { useCompact } from "@/lib/ui/useCompact";
 import { dsRole } from "@/lib/ui/roles";
 
 export interface BasketRecord {
@@ -74,6 +76,8 @@ export function BasketView({
   const [rates, setRates] = useState<Map<Address, bigint> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const compact = useCompact();
+  const [amountLabel, setAmountLabel] = useState("");
   const [curator, setCurator] = useState<
     { curator: Address; record: CuratorRecord; breached: boolean } | null
   >(null);
@@ -378,18 +382,41 @@ export function BasketView({
         </section>
       </div>
 
-      <div className="basket-aside">
-        <InvestPanel
-          basket={address}
-          symbol={state.symbol}
-          tokens={state.tokens}
-          reserves={state.reserves}
-          totalSupply={state.totalSupply}
-          shareBalance={state.shareBalance}
-          ratesPerLeg={ratesPerLeg}
-          onDone={load}
-        />
-      </div>
+      {/* One panel, mounted where the viewport wants it. At desktop it is the
+          sticky column; below 768px it lives in a bottom sheet the anchored bar
+          opens, so the action a reader came for is never several screens down. */}
+      {compact ? (
+        <MobileActionSheet
+          title={`Mint ${state.symbol}`}
+          action={`Mint ${state.symbol}`}
+          detail={amountLabel}
+        >
+          <InvestPanel
+            basket={address}
+            symbol={state.symbol}
+            tokens={state.tokens}
+            reserves={state.reserves}
+            totalSupply={state.totalSupply}
+            shareBalance={state.shareBalance}
+            ratesPerLeg={ratesPerLeg}
+            onDone={load}
+            onAmountChange={setAmountLabel}
+          />
+        </MobileActionSheet>
+      ) : (
+        <div className="basket-aside">
+          <InvestPanel
+            basket={address}
+            symbol={state.symbol}
+            tokens={state.tokens}
+            reserves={state.reserves}
+            totalSupply={state.totalSupply}
+            shareBalance={state.shareBalance}
+            ratesPerLeg={ratesPerLeg}
+            onDone={load}
+          />
+        </div>
+      )}
     </div>
   );
 }

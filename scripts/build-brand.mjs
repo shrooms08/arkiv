@@ -66,6 +66,20 @@ function touchIconSvg(px) {
 </svg>`;
 }
 
+/**
+ * Maskable icon. Android crops an arbitrary shape out of this, so the glyph is
+ * drawn inside the 80% safe zone the spec guarantees survives any mask, on a
+ * field that bleeds to the edge.
+ */
+function maskableSvg(px) {
+  const glyph = px * 0.44;
+  const offset = (px - glyph) / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${px} ${px}">
+  <rect width="${px}" height="${px}" fill="${INK}"/>
+  <g transform="translate(${offset} ${offset}) scale(${glyph / 48})">${glyphRects(BONE)}</g>
+</svg>`;
+}
+
 async function main() {
   mkdirSync(BRAND_DIR, { recursive: true });
   if (!existsSync(APP_DIR)) throw new Error("src/app not found, run from the repo root");
@@ -73,6 +87,12 @@ async function main() {
   const targets = [
     { path: join(BRAND_DIR, "arkiv-avatar.png"), svg: avatarSvg(400), label: "avatar 400x400" },
     { path: join(APP_DIR, "apple-icon.png"), svg: touchIconSvg(180), label: "apple-icon 180x180" },
+    // Home screen icons, from the same geometry as everything else so the
+    // installed icon cannot drift from the mark.
+    { path: join(BRAND_DIR, "icon-192.png"), svg: touchIconSvg(192), label: "icon 192x192" },
+    { path: join(BRAND_DIR, "icon-512.png"), svg: touchIconSvg(512), label: "icon 512x512" },
+    { path: join(BRAND_DIR, "icon-192-maskable.png"), svg: maskableSvg(192), label: "maskable 192x192" },
+    { path: join(BRAND_DIR, "icon-512-maskable.png"), svg: maskableSvg(512), label: "maskable 512x512" },
   ];
 
   for (const t of targets) {
@@ -80,7 +100,7 @@ async function main() {
     const meta = await sharp(t.path).metadata();
     // Assert rather than trust: a wrong-sized avatar is silently accepted by
     // every platform that uploads it and then looks wrong everywhere.
-    const expected = Number(t.label.match(/(\d+)x/)[1]);
+    const expected = Number(t.label.match(/(\d+)x(\d+)$/)[1]);
     if (meta.width !== expected || meta.height !== expected) {
       throw new Error(`${t.label}: got ${meta.width}x${meta.height}`);
     }

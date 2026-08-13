@@ -40,6 +40,7 @@ export interface PhotoCover {
   kind: "photo";
   png: string;
   webp: string;
+  webp1080: string;
   webp720: string;
   alt: string;
 }
@@ -71,6 +72,7 @@ export function resolveCover(ticker: string): ResolvedCover {
     kind: "photo",
     png: `/covers/${key}.png`,
     webp: `/covers/${key}.webp`,
+    webp1080: `/covers/${key}@1080.webp`,
     webp720: `/covers/${key}@720.webp`,
     alt,
   };

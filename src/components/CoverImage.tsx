@@ -43,7 +43,7 @@ export function CoverImage({
       <picture className={className || undefined}>
         <source
           type="image/webp"
-          srcSet={`${cover.webp720} 720w, ${cover.webp} 1408w`}
+          srcSet={`${cover.webp720} 720w, ${cover.webp1080} 1080w, ${cover.webp} 1408w`}
           sizes={sizes}
         />
         <img

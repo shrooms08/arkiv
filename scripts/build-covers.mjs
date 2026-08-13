@@ -19,8 +19,14 @@ import { join } from "node:path";
 import sharp from "sharp";
 
 const DIR = join(process.cwd(), "public", "covers");
+/*
+ * Three widths, not two. With only 720 and 1408 a 3x phone rendering a 343px
+ * card needs ~1030 device pixels and jumps straight to 1408, so mobile pulled
+ * 860 KB of covers against desktop's 254 KB. The middle rung closes that.
+ */
 const WIDTHS = [
   { suffix: "", width: 1408 },
+  { suffix: "@1080", width: 1080 },
   { suffix: "@720", width: 720 },
 ];
 const QUALITY = 82;

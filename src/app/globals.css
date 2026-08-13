@@ -1409,3 +1409,355 @@ body {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ===================================================================
+ * Mobile chrome
+ *
+ * Everything in this block is additive below 768px. Desktop is untouched:
+ * the tab bar and the action bar are display:none above the breakpoint and
+ * the shared rules below only relax constraints rather than tighten them.
+ * =============================================================== */
+
+:root {
+  /* Height of the fixed bottom bar, used to reserve space so it never covers
+     the last row of a scrolling page. */
+  --tabbar-h: 3.75rem;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+.tabbar { display: none; }
+
+@media (max-width: 47.99rem) {
+  .tabbar {
+    display: block;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    background: var(--color-surface);
+    border-block-start: var(--border-width) solid var(--color-rule-strong);
+    /* Clears the iPhone home indicator and the Android gesture bar. Requires
+       viewport-fit=cover, which is set in the viewport export. */
+    padding-block-end: var(--safe-b);
+  }
+  .tabbar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+  .tabbar__item { flex: 1 1 0; }
+  .tabbar__link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    /* 48dp floor, which is the Android target and clears the iOS 44pt one. */
+    min-height: 3rem;
+    height: var(--tabbar-h);
+    color: var(--color-ink-subtle);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tabbar__label {
+    font-family: var(--font-mono);
+    font-size: var(--text-nano);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+  .tabbar__link[aria-current="page"] {
+    color: var(--color-ink);
+    background: var(--color-ink-wash);
+  }
+  .tabbar__link:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-ring);
+    outline-offset: calc(var(--focus-ring-offset) * -1);
+  }
+
+  /* Reserve the bar's height so the footer and the last row of any page stay
+     reachable rather than sitting underneath it.
+     The border is part of that height. Without it the reservation is one pixel
+     short and the footer sits exactly 1px under the bar, which measurement
+     catches and eyes do not. */
+  .app-shell {
+    padding-block-end: calc(var(--tabbar-h) + var(--safe-b) + var(--border-width));
+  }
+
+  /* The desktop nav keeps the brand and the wallet, and drops the links the
+     tab bar now owns. The address stays visible without navigating anywhere. */
+  .ark-nav__links { display: none; }
+  .ark-nav__inner { min-height: auto; padding-block: var(--space-3); }
+}
+
+/* ── Mobile action bar and bottom sheet ──────────────────────────── */
+.actionbar { display: none; }
+
+@media (max-width: 47.99rem) {
+  .actionbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    position: fixed;
+    inset-inline: 0;
+    /* Above the tab bar, never on top of it. */
+    bottom: calc(var(--tabbar-h) + var(--safe-b));
+    z-index: 39;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-raised);
+    border-block-start: var(--border-width) solid var(--color-rule-strong);
+  }
+  .actionbar__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .actionbar__detail {
+    font-family: var(--font-mono);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .actionbar__open { min-height: 3rem; flex: 0 0 auto; }
+
+  /* The panel keeps its place in the reading order; the bar is the shortcut. */
+  .basket-aside .invest,
+  .page-underwrite .mint-panel { scroll-margin-block-end: var(--space-24); }
+
+  .sheet-root { position: fixed; inset: 0; z-index: 60; }
+  .sheet-scrim {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    background: oklch(0 0 0 / 0.45);
+    animation: sheet-fade var(--duration-base) var(--ease-out);
+  }
+  .sheet {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-start-start-radius: var(--radius-2xl);
+    border-start-end-radius: var(--radius-2xl);
+    box-shadow: var(--elevation-modal);
+    padding-block-end: var(--safe-b);
+    transform: translateY(0);
+    transition: transform var(--duration-base) var(--ease-out);
+    animation: sheet-up var(--duration-base) var(--ease-out);
+  }
+  /* The grip is the only place a downward drag dismisses, so scrolling the
+     body does not fight the gesture. */
+  .sheet__grip {
+    display: flex;
+    justify-content: center;
+    padding-block: var(--space-3);
+    touch-action: none;
+    cursor: grab;
+  }
+  .sheet__handle {
+    width: 2.5rem;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--color-rule-strong);
+  }
+  .sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: 0 var(--space-4) var(--space-3);
+    border-block-end: var(--border-width) solid var(--color-rule);
+  }
+  .sheet__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight);
+  }
+  .sheet__close {
+    min-height: 3rem;
+    min-width: 3rem;
+    padding-inline: var(--space-3);
+    border: var(--border-width) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .sheet__body {
+    padding: var(--space-4);
+    overflow-y: auto;
+    /* Stops the page behind rubber-banding when the sheet hits its end. */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Motion is decoration here; the sheet must still arrive. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-scrim { animation: none; transition: none; }
+}
+
+/* ── Touch, input and density ────────────────────────────────────── */
+
+/*
+ * 16px is the iOS Safari threshold: any smaller and focusing an input zooms the
+ * page, leaving the user magnified with no obvious way back. This is a floor on
+ * every input regardless of viewport, because the zoom happens on desktop
+ * Safari touch devices too.
+ */
+input, textarea, select {
+  font-size: max(16px, var(--text-body));
+}
+
+@media (max-width: 47.99rem) {
+  /* 48dp Android floor, which also clears the 44pt iOS one. Applied to the
+     controls that were sized for a cursor rather than a thumb. */
+  .mint-slippage-preset,
+  .invest__max,
+  .position__toggle,
+  .basket-summary__toggle,
+  .ark-assetrow__addr,
+  .sheet__close,
+  .ark-accordion__trigger {
+    min-height: 3rem;
+  }
+  .mint-slippage-preset { min-width: 3.5rem; padding-inline: var(--space-3); }
+  .ark-assetrow__addr,
+  .invest__max,
+  .position__toggle,
+  .basket-summary__toggle {
+    display: inline-flex;
+    align-items: center;
+  }
+  .ark-btn { min-height: 3rem; }
+  .ark-btn--sm { min-height: 2.75rem; }
+
+  /* Dense rows stack: label above value, one field per line where the value
+     needs the room. The weight numerals keep the display face and reflow
+     rather than shrinking, because shrinking them is the thing that makes a
+     record view look like a spreadsheet. */
+  .position { gap: var(--space-4); }
+  .position__figure { flex: 0 0 5.5rem; }
+  .position__body { flex: 1 1 100%; }
+  .position__figures { flex-wrap: wrap; gap: var(--space-5); }
+  .position__actions { flex: 1 1 100%; flex-direction: row; }
+  .position__actions > a { flex: 1 1 auto; align-self: center; }
+  .position__actions .redeem-action { flex: 1 1 auto; }
+  .position__leg {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    row-gap: var(--space-1);
+  }
+  .position__leg-units { margin-inline-start: 0; grid-column: 2; grid-row: 1; }
+
+  .basket-holding__row { gap: var(--space-4); }
+  .basket-holding__weights { flex-wrap: wrap; gap: var(--space-5); width: 100%; }
+
+  .invest__row { flex-wrap: wrap; gap: var(--space-1); }
+  .invest__row dt { flex: 1 1 60%; }
+  .invest__row dd { flex: 0 0 auto; }
+}
+
+/*
+ * Nothing may depend on hover. Touch devices never fire it, so a card that only
+ * reveals its affordance on hover simply has none on a phone. Every hover rule
+ * that carried meaning now also fires on focus-within and on active press.
+ */
+.ark-card--interactive:focus-within,
+.ark-card--interactive:active {
+  border-color: var(--color-rule-strong);
+  background: var(--color-surface-raised);
+}
+.ark-assetrow:focus-within { background: var(--color-surface-sunken); }
+.ark-ribbon__seg:focus-within { filter: brightness(1.08); }
+.ark-ribbon__seg--narrow:focus-within .ark-ribbon__label { opacity: 1; }
+
+@media (hover: none) {
+  /* On a touch device the ribbon's narrow labels can never be hovered, so they
+     are simply shown. A label nobody can reveal is a label that does not exist. */
+  .ark-ribbon__seg--narrow .ark-ribbon__label { opacity: 1; }
+}
+
+/* Scroll containers that should not rubber-band the page behind them. */
+.sheet__body,
+.app-shell { overscroll-behavior-y: contain; }
+
+/* No wallet in this browser. An explanation, not a dead button. */
+.wallet-none {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 34rem;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.wallet-none__text {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+  text-wrap: pretty;
+}
+.wallet-none__text strong { color: var(--color-ink); font-weight: var(--weight-semibold); }
+
+@media (max-width: 47.99rem) {
+  /* The nav's action slot is a strip on its own line at mobile, so the address
+     stays readable without navigating anywhere. */
+  .ark-nav__actions { flex: 1 1 100%; justify-content: flex-start; }
+  .wallet-none { max-width: none; }
+}
+
+/* ── Touch targets, second pass ──────────────────────────────────── */
+/*
+ * Measured rather than assumed. The address chip actions rendered at 26x11 and
+ * 52x10 on a Pixel: sized for a cursor, as flagged. These bring every remaining
+ * control to a 44px minimum on touch viewports without changing how any of them
+ * look on desktop, since the rules are scoped to the mobile breakpoint.
+ */
+@media (max-width: 47.99rem) {
+  .app-addrchip__action {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: var(--space-2);
+  }
+  .app-addrchip { flex-wrap: wrap; row-gap: var(--space-1); }
+
+  .archive-filter { min-height: 2.75rem; padding-inline: var(--space-4); }
+
+  /* Footer links measured 21px tall. They are the only navigation on some
+     screens, so they get the same floor as everything else. */
+  .ark-footer__link,
+  .ark-nav__brand,
+  .home-archive-link,
+  .landing-cta__secondary {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+  }
+  .ark-footer__col { gap: var(--space-1); }
+
+  .disclosure-safe-link { min-height: 2.75rem; display: inline-flex; align-items: center; }
+
+  /* Standalone note links are controls, not prose. */
+  .app-note > a, a.app-note {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+  }
+}

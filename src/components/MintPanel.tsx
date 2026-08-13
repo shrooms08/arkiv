@@ -25,7 +25,16 @@ type Step = "idle" | "creating" | "approving" | "minting" | "done" | "error";
 
 const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 
-export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: string }) {
+export function MintPanel({
+  thesis,
+  thesisHash,
+  onAmountChange,
+}: {
+  thesis: Thesis;
+  thesisHash: string;
+  /** Reports the typed amount so a collapsed action bar can display it. */
+  onAmountChange?: (display: string) => void;
+}) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const guard = useChainGuard();
@@ -221,6 +230,10 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
       setMessage(explainRevert(err));
     }
   }
+
+  useEffect(() => {
+    onAmountChange?.(amount ? `${amount} USDG` : "");
+  }, [amount, onAmountChange]);
 
   const wrongNetwork = guard.wrongChain;
   const busy = step === "creating" || step === "approving" || step === "minting";

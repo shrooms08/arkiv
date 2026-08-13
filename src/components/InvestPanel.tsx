@@ -32,6 +32,8 @@ export interface InvestPanelProps {
   shareBalance: bigint;
   /** Adapter rate per leg where the chain is mock-priced, same order. */
   ratesPerLeg: readonly (bigint | null)[];
+  /** Reports the typed amount so a collapsed action bar can display it. */
+  onAmountChange?: (display: string) => void;
   onDone?: () => void;
 }
 
@@ -56,6 +58,7 @@ export function InvestPanel({
   shareBalance,
   ratesPerLeg,
   onDone,
+  onAmountChange,
 }: InvestPanelProps) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -156,6 +159,10 @@ export function InvestPanel({
   useEffect(() => {
     if (step === "done") void refetchBalance();
   }, [step, refetchBalance]);
+
+  useEffect(() => {
+    onAmountChange?.(amount ? `${amount} USDG` : "");
+  }, [amount, onAmountChange]);
 
   const wrongNetwork = guard.wrongChain;
   const busy = step === "approving" || step === "minting";
