@@ -76,7 +76,7 @@ export function InvestPanel({
   // Fee read live from the registry, never assumed. It is owner-settable inside
   // a hard cap, so a hardcoded 30 bps would eventually size the split wrongly
   // and revert the mint on SplitMismatch.
-  const { data: feeBpsRaw } = useReadContract({
+  const { data: feeBpsRaw, isSuccess: feeLoaded } = useReadContract({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
@@ -172,7 +172,10 @@ export function InvestPanel({
     // Belt as well as braces: the control is disabled off-chain, and the call
     // refuses anyway, so a stale render or a mid-flight wallet switch cannot
     // put a transaction on a chain the contracts are not on.
-    if (!client || !address || !deployment || !guard.ok) return;
+    // The split must cover the POST-fee amount exactly. Sending one sized
+    // against an unread fee of zero reverts on SplitMismatch, so the mint
+    // refuses until the registry has actually answered.
+    if (!client || !address || !deployment || !guard.ok || !feeLoaded) return;
     setMessage(null);
     try {
       // 1. Approve exactly this mint, not an unbounded allowance.
@@ -284,9 +287,12 @@ export function InvestPanel({
         </div>
         <div className="invest__row invest__row--fee">
           <dt>
-            Mint fee <span className="app-note">{(Number(feeBps) / 100).toFixed(2)}%</span>
+            Mint fee{" "}
+            <span className="app-note">
+              {feeLoaded ? `${(Number(feeBps) / 100).toFixed(2)}%` : "reading…"}
+            </span>
           </dt>
-          <dd>{money(fee)}</dd>
+          <dd>{feeLoaded ? money(fee) : "—"}</dd>
         </div>
         <div className="invest__row">
           <dt>
@@ -315,7 +321,9 @@ export function InvestPanel({
       <Button
         className="invest__submit"
         size="lg"
-        disabled={!isConnected || wrongNetwork || busy || usdgIn === 0n || overBalance}
+        disabled={
+          !isConnected || wrongNetwork || busy || usdgIn === 0n || overBalance || !feeLoaded
+        }
         loading={busy}
         onClick={mint}
       >

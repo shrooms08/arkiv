@@ -49,7 +49,7 @@ export function MintPanel({
   // The fee is read from the registry, never assumed. It is owner-settable
   // within a hard cap, so a hardcoded 30 bps here would eventually size the
   // split wrongly and revert the mint on SplitMismatch.
-  const { data: feeBpsRaw } = useReadContract({
+  const { data: feeBpsRaw, isSuccess: feeLoaded } = useReadContract({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
@@ -156,7 +156,7 @@ export function MintPanel({
   async function run() {
     // The three-transaction flow refuses at its own entry point too, so a
     // wallet that changes chain between render and click cannot start it.
-    if (!guard.ok) return;
+    if (!guard.ok || !feeLoaded) return;
     if (!client || !address) return;
     setMessage(null);
 
@@ -374,7 +374,7 @@ export function MintPanel({
       <Button
         className="mint-submit"
         size="lg"
-        disabled={!guard.ok || busy || usdgIn === 0n}
+        disabled={!guard.ok || busy || usdgIn === 0n || !feeLoaded}
         loading={busy}
         onClick={run}
       >
