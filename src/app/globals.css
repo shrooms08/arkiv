@@ -1761,3 +1761,4 @@ input, textarea, select {
     align-items: center;
   }
 }
+.actionbar__detail--warn { color: var(--color-verdict); }

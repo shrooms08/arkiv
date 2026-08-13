@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { ACTIVE_CHAIN } from "@/lib/chain/chains";
+import { useChainGuard } from "@/lib/chain/guard";
+
 export interface MobileActionSheetProps {
   /** Short label for the anchored bar, e.g. "Mint CAPEXPAY". */
   action: string;
@@ -28,6 +31,10 @@ export interface MobileActionSheetProps {
  */
 export function MobileActionSheet({ action, detail, title, children }: MobileActionSheetProps) {
   const [open, setOpen] = useState(false);
+  // The bar is the only thing visible when the sheet is shut, so it has to
+  // carry the reason an action is unavailable. Opening a sheet to discover you
+  // are on the wrong chain is a dead end the bar can warn about first.
+  const guard = useChainGuard();
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
@@ -77,7 +84,13 @@ export function MobileActionSheet({ action, detail, title, children }: MobileAct
       <div className="actionbar">
         <div className="actionbar__text">
           <span className="app-label">{title}</span>
-          {detail && <span className="actionbar__detail">{detail}</span>}
+          {guard.wrongChain ? (
+            <span className="actionbar__detail actionbar__detail--warn">
+              Switch to {ACTIVE_CHAIN.name}
+            </span>
+          ) : (
+            detail && <span className="actionbar__detail">{detail}</span>
+          )}
         </div>
         <button
           type="button"
