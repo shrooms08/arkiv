@@ -33,9 +33,16 @@ export function allRecords(): UnderwriteRecord[] {
   // Fixtures win, matching findRecord. The log is append-only and keeps the
   // underwriter's original output, including the ticker it proposed before the
   // author settled on a different one. Letting it overwrite a fixture silently
-  // reverted three baskets to the model's first guess locally, which detached
-  // them from their cover art and their serial. Production never saw it only
-  // because logs/ is excluded from the deploy, which is luck rather than design.
+  // reverted three baskets to the model's first guess, detaching them from their
+  // cover art and their serial.
+  //
+  // Two independent guards, because this previously had none in code at all.
+  // Production correctness rested on `logs/` being listed in .vercelignore,
+  // which is a deploy setting a single edit could undo. Now the log is not read
+  // in production at all, and even where it is read it can never displace a
+  // fixture. See the drift test in test/underwriting.test.ts.
+  if (process.env.NODE_ENV === "production") return sorted(byHash);
+
   const logPath = join(process.cwd(), "logs", "underwriting.jsonl");
   if (existsSync(logPath)) {
     for (const line of readFileSync(logPath, "utf8").split("\n")) {
@@ -44,5 +51,9 @@ export function allRecords(): UnderwriteRecord[] {
       if (!byHash.has(record.thesisHash)) byHash.set(record.thesisHash, record);
     }
   }
+  return sorted(byHash);
+}
+
+function sorted(byHash: Map<string, UnderwriteRecord>): UnderwriteRecord[] {
   return [...byHash.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

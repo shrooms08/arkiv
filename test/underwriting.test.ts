@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { allRecords } from "../src/lib/underwriting/lookup";
+
 import { ALLOWED_SYMBOLS, assetBySymbol } from "../src/config/assets";
 import { checkConstraints } from "../src/lib/underwriting/constraints";
 import { RULES, ThesisSchema, type Thesis } from "../src/lib/underwriting/schema";
@@ -224,4 +226,24 @@ describe("recorded fixtures", () => {
       expect(/\d|below|above|under|over|fewer|more than|flat|down/i.test(falsifier.breachCondition)).toBe(true);
     },
   );
+});
+
+describe("the reproducibility log cannot shadow a fixture", () => {
+  it("every ticker allRecords returns matches its fixture", () => {
+    // The log keeps the underwriter's original ticker, which for three baskets
+    // is not the ticker they shipped under. If a log entry ever displaces a
+    // fixture again, those baskets silently detach from their cover art and
+    // their serial, which is what happened before this test existed.
+    const fixtures = loadFixtures();
+    for (const record of allRecords()) {
+      const fixture = fixtures.get(record.thesisHash);
+      if (!fixture) continue;
+      expect(record.thesis.ticker).toBe(fixture.thesis.ticker);
+    }
+  });
+
+  it("returns one record per hash", () => {
+    const hashes = allRecords().map((r) => r.thesisHash);
+    expect(new Set(hashes).size).toBe(hashes.length);
+  });
 });

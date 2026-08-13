@@ -25,7 +25,7 @@ Registry `0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c`
 | ARKIV-0005 | EDGEAI | `0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C` |
 | ARKIV-0006 | CAPEXPAY | `0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d` |
 
-All 24 contracts verified on Sourcify at `https://repo.sourcify.dev/1952/<address>`, confirmed through the Sourcify API rather than from deploy logs.
+All 25 contracts verified on Sourcify at `https://repo.sourcify.dev/1952/<address>`, confirmed through the Sourcify API rather than from deploy logs. That includes ARKIV-0007, which a visitor filed after the initial verification run.
 
 Economics are live on chain, not documented aspiration. `quoteMintFee(1000e6)` returns a fee of 3 USDG against 997 net. Six seed mints have booked 9.00 USDG of fee, split 4.50 to the curator and 4.50 to the protocol.
 

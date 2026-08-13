@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BasketCard, type RibbonSegment } from "@ds";
 import { ThesisComposer } from "@/components/ThesisComposer";
 import { resolveCover } from "@/lib/ui/covers";
-import { basketIndexFor } from "@/lib/chain/deployments";
+import { serialForThesis } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +68,7 @@ export default function AppHomePage() {
               return (
                 <BasketCard
                   key={r.thesisHash}
-                  index={basketIndexFor(t.ticker) ?? 0}
+                  index={serialForThesis(r.thesisHash) ?? 0}
                   name={t.title}
                   ticker={t.ticker}
                   thesis={t.summary}

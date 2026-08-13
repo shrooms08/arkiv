@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 import { BasketView } from "@/components/BasketView";
-import { basketIndexFor } from "@/lib/chain/deployments";
+import { serialForAddress } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 import manifest from "../../../../../deployments/xlayer-testnet.json";
 
@@ -28,7 +28,7 @@ function recordForAddress(address: string) {
 
   return {
     thesisHash: record.thesisHash,
-    index: basketIndexFor(hit.symbol) ?? 0,
+    index: serialForAddress(address) ?? 0,
     title: record.thesis.title,
     summary: record.thesis.summary,
     primaryExpression: record.thesis.primaryExpression,

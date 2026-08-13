@@ -12,8 +12,10 @@ import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor, wrapperFor } from "@/lib/chain/deployments";
 import { useChainGuard } from "@/lib/chain/guard";
+import { fetchRegistry, findFiling, type RegistryEntry } from "@/lib/chain/registry";
 import { fetchMintQuotes, withSlippage, type LegQuote } from "@/lib/chain/quoter";
 import { Faucet } from "./Faucet";
+import { ExistingFilingMint } from "./ExistingFilingMint";
 import { SwitchNetwork } from "./SwitchNetwork";
 import { splitFor } from "@/lib/chain/impact";
 import { explainRevert } from "@/lib/chain/errors";
@@ -27,6 +29,8 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const guard = useChainGuard();
+  // undefined while the registry is being read, null when this thesis is new.
+  const [existing, setExisting] = useState<RegistryEntry | null | undefined>(undefined);
   const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
   const config = useConfig();
   const { writeContractAsync } = useWriteContract();
@@ -118,6 +122,28 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
     return aw < bw ? -1 : aw > bw ? 1 : 0;
   });
 
+  // Has this exact thesis already been filed? Matching on hash, never on ticker
+  // or title, because both are chosen by whoever files and a second filing under
+  // an existing ticker is precisely the case being caught.
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      if (!client || !deployment) return;
+      try {
+        const registry = await fetchRegistry(client, deployment.arkiv);
+        const hit = findFiling(registry, thesisHash);
+        if (live) setExisting(hit ?? null);
+      } catch {
+        // A failed lookup must not block filing. The worst case is the old
+        // behaviour, which is a duplicate, and that is better than a dead panel.
+        if (live) setExisting(null);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [client, deployment, thesisHash]);
+
   async function run() {
     // The three-transaction flow refuses at its own entry point too, so a
     // wallet that changes chain between render and click cannot start it.
@@ -198,6 +224,17 @@ export function MintPanel({ thesis, thesisHash }: { thesis: Thesis; thesisHash: 
 
   const wrongNetwork = guard.wrongChain;
   const busy = step === "creating" || step === "approving" || step === "minting";
+
+  // Already on the record. Buy into it rather than filing a second copy: the
+  // duplicate would make this caller the curator of someone else's thesis and
+  // divert the curator stream to them.
+  if (existing) {
+    return (
+      <section className="app-panel app-panel--raised mint-panel">
+        <ExistingFilingMint filing={existing} serial={existing.index + 1} />
+      </section>
+    );
+  }
 
   return (
     <section className="app-panel app-panel--raised mint-panel">

@@ -34,9 +34,11 @@ export interface Deployment {
 }
 
 export interface ManifestBasket {
+  index: number;
   symbol: string;
   name: string;
   address: string;
+  thesisHash: string | null;
 }
 
 interface Manifest {
@@ -110,11 +112,40 @@ const MANIFEST_BASKETS: ManifestBasket[] = (
 ) as ManifestBasket[];
 
 /** 1-based registry index for a ticker, or undefined if it is not on chain. */
-export function basketIndexFor(symbol: string): number | undefined {
-  const i = MANIFEST_BASKETS.findIndex(
-    (b) => b.symbol.toLowerCase() === symbol.toLowerCase(),
+/**
+ * The serial for a basket address.
+ *
+ * The serial IS the registry index: ARKIV-000N is the basket at index N-1 in
+ * the registry's `baskets` array. It was previously derived from the ticker,
+ * which worked only while tickers happened to be unique. They are not, and
+ * cannot be, because they are user-supplied: a second basket filed under an
+ * existing ticker rendered with the first one's serial.
+ */
+export function serialForAddress(address: string): number | undefined {
+  const hit = MANIFEST_BASKETS.find(
+    (b) => b.address.toLowerCase() === address.toLowerCase(),
   );
-  return i === -1 ? undefined : i + 1;
+  return hit ? hit.index + 1 : undefined;
+}
+
+/**
+ * The serial for a filed thesis, by hash.
+ *
+ * Resolves to the FIRST basket filed under this hash. A record has one filing
+ * that is its own; a later duplicate is a different basket with its own serial
+ * and is not what a card about this thesis should point at.
+ */
+export function serialForThesis(thesisHash: string): number | undefined {
+  const hits = MANIFEST_BASKETS.filter((b) => b.thesisHash === thesisHash);
+  if (hits.length === 0) return undefined;
+  return Math.min(...hits.map((b) => b.index)) + 1;
+}
+
+/** Address of the first basket filed under this thesis hash. */
+export function basketAddressForThesis(thesisHash: string): string | undefined {
+  const hits = MANIFEST_BASKETS.filter((b) => b.thesisHash === thesisHash);
+  if (hits.length === 0) return undefined;
+  return hits.reduce((a, b) => (a.index <= b.index ? a : b)).address;
 }
 
 /** Deployed basket address for a ticker, if it has been created. */

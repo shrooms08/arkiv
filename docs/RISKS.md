@@ -425,3 +425,51 @@ moving the key to a multisig and then to a mechanism.
 Closed since Gate 0: the V3-fork init code hash is confirmed canonical (was a
 prerequisite for the callback guard's CREATE2 lock), and the six zero-supply
 exclusions now carry verified addresses rather than symbols alone.
+
+## R14. Anyone can file a thesis that has already been filed, and collect its fees
+
+`createBasket` accepts any thesis URI, including one already recorded against an
+existing basket. Nothing on chain compares a new filing's hash to the filings
+already in the registry.
+
+**What it permits.** A caller reads a thesis from the archive, calls
+`createBasket` with the same `arkiv:<hash>` URI, and becomes `creatorOf` the new
+basket. From that point every mint into their copy accrues the curator share to
+them. They wrote nothing. The original author's basket is untouched and keeps
+its own stream, so nothing is stolen from it directly, but the copy competes
+with it for mints and the copier is paid as though they had authored the
+argument. Curator standing is affected the same way: a copier accumulates a
+track record built on someone else's claims.
+
+**Who it affects.** Authors, who can be shadowed by a copy of their own thesis.
+Buyers, who can mint into a duplicate believing they are backing the author, and
+have no on-chain signal distinguishing the original from the copy other than the
+serial being higher.
+
+**It has already happened.** ARKIV-0007 is a second filing of ARKIV-0002's
+thesis, created by a visitor to the deployed app on 2026-08-12. It was not
+malicious: the mint flow called `createBasket` unconditionally, so buying into
+an existing thesis through the app produced a duplicate as a side effect. The
+record stays. The archive is append-only and a real filing is not something to
+delete because it is inconvenient.
+
+**The mitigation, and why it is only a mitigation.** The app now reads the
+registry before filing, matches on thesis hash, and routes a repeat filing into
+minting the existing basket instead. Matching is on hash, never on ticker or
+title, since both are supplied by whoever files. This closes the accidental path
+completely, which is the one that actually fired. It closes none of the
+deliberate one. A caller going straight to the contract, or using any other
+client, can still file a duplicate, and no client-side check can prevent that.
+The guard makes the honest path correct; it does not make the dishonest path
+unavailable.
+
+**The real fix.** Reject a known thesis hash in `createBasket`, by keeping
+`mapping(bytes32 => address) filedBy` and reverting on a hash already present.
+That is a contract change and a redeploy, and it is deliberately not being made
+here: the deployed registry holds six seeded baskets, a real visitor's basket and
+its fee ledger, and replacing it to close a griefing vector is the wrong trade
+this close to submission. A future deployment should carry it.
+
+**What it does not touch.** Redemption. A duplicate basket is a real basket with
+real reserves, and its holders redeem on exactly the same unconditional terms as
+any other. R10 is unaffected.

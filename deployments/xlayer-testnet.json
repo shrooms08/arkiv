@@ -32,7 +32,8 @@
     "Basket:SCRATE": "0x8964db9f1FCC6D86F34600AF40D844C715971D27",
     "Basket:ATTENTION": "0x6a232080E2Eb3C236F866fA92c35b246D2C86192",
     "Basket:EDGEAI": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C",
-    "Basket:CAPEXPAY": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d"
+    "Basket:CAPEXPAY": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d",
+    "Basket:STICKYINF#7": "0x860C6f1f85CA33da119F33356bAbA7EDf1d7F72A"
   },
   "assets": {
     "GLDx": "0x7F778ce3b6618bd5BC071A99bc25Aaca81bb6C71",
@@ -52,34 +53,53 @@
   },
   "baskets": [
     {
+      "index": 0,
       "symbol": "AIBOTTLE",
       "name": "AI Infrastructure Bottleneck Capture",
-      "address": "0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a"
+      "address": "0xb88E14816Ac42B16B761Ab18d12C45A9FcA17f4a",
+      "thesisHash": "e4d242a38e509390"
     },
     {
+      "index": 1,
       "symbol": "STICKYINF",
       "name": "Sticky Inflation, Central Bank Blink",
-      "address": "0x2100153203d303B82e6Ec21BDeD4bb32E455F789"
+      "address": "0x2100153203d303B82e6Ec21BDeD4bb32E455F789",
+      "thesisHash": "2563e23afaa8d654"
     },
     {
+      "index": 2,
       "symbol": "SCRATE",
       "name": "Small Cap Rate Relief with Index Hedge",
-      "address": "0x8964db9f1FCC6D86F34600AF40D844C715971D27"
+      "address": "0x8964db9f1FCC6D86F34600AF40D844C715971D27",
+      "thesisHash": "de82aadb08bef443"
     },
     {
+      "index": 3,
       "symbol": "ATTENTION",
       "name": "Distribution Scarcity: AI Shifts Value to the Pipe",
-      "address": "0x6a232080E2Eb3C236F866fA92c35b246D2C86192"
+      "address": "0x6a232080E2Eb3C236F866fA92c35b246D2C86192",
+      "thesisHash": "aa23e27493ef8119"
     },
     {
+      "index": 4,
       "symbol": "EDGEAI",
       "name": "On-Device Inference: Value Shifts from Cloud to Edge",
-      "address": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C"
+      "address": "0xC0B56800Af8fad188ebE17Ca03896fe4764dF78C",
+      "thesisHash": "9b7ca9022c510d89"
     },
     {
+      "index": 5,
       "symbol": "CAPEXPAY",
       "name": "AI Capex Reckoning: Seat-Licence Advantage",
-      "address": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d"
+      "address": "0x9FE13aB89f47936dD70608442D0af9Bb5D4AA95d",
+      "thesisHash": "7e991c5b1e0fda63"
+    },
+    {
+      "index": 6,
+      "symbol": "STICKYINF",
+      "name": "Sticky Inflation, Central Bank Blink",
+      "address": "0x860C6f1f85CA33da119F33356bAbA7EDf1d7F72A",
+      "thesisHash": "2563e23afaa8d654"
     }
   ],
   "transactions": {

@@ -7,7 +7,7 @@ import { CoverImage } from "@/components/CoverImage";
 import { MintPanel } from "@/components/MintPanel";
 import { WrapperDisclosure } from "@/components/WrapperDisclosure";
 import { assetBySymbol } from "@/config/assets";
-import { basketIndexFor } from "@/lib/chain/deployments";
+import { serialForThesis } from "@/lib/chain/deployments";
 import { resolveCover } from "@/lib/ui/covers";
 import { dsRole } from "@/lib/ui/roles";
 import { findRecord } from "@/lib/underwriting/lookup";
@@ -35,7 +35,7 @@ export default async function UnderwritePage({
     isPrimary: h.symbol === t.primaryExpression,
   }));
 
-  const serial = basketIndexFor(t.ticker) ?? 0;
+  const serial = serialForThesis(record.thesisHash) ?? 0;
 
   // A freshly underwritten thesis has no serial until it is minted, because the
   // serial IS the registry index. Rather than invent one or leave the slot

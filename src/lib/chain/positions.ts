@@ -7,11 +7,18 @@ import type { Deployment } from "./deployments";
 export interface HeldBasket {
   address: Address;
   shares: bigint;
+  /**
+   * Position in the registry's `baskets` array. The serial is this plus one.
+   * Taken from the live enumeration rather than the committed manifest, so a
+   * basket filed after the last manifest regeneration still numbers correctly.
+   */
+  index: number;
 }
 
 export interface PositionDetail {
   address: Address;
   shares: bigint;
+  index: number;
   symbol: string;
   name: string;
   totalSupply: bigint;
@@ -70,7 +77,10 @@ export async function fetchHeldBaskets(
   addresses.forEach((address, i) => {
     const r = balances[i];
     if (r?.status === "success" && typeof r.result === "bigint" && r.result > 0n) {
-      held.push({ address, shares: r.result });
+      // `i` is the registry index: getBaskets returns the array in order and
+      // the pages above are appended in order, so this is not a coincidence of
+      // iteration but the position itself.
+      held.push({ address, shares: r.result, index: i });
     }
   });
   return held;
@@ -127,6 +137,7 @@ export async function fetchPositionDetails(
     return {
       address: h.address,
       shares: h.shares,
+      index: h.index,
       name: pick<string>(0, ""),
       symbol: pick<string>(1, ""),
       totalSupply: pick<bigint>(2, 0n),

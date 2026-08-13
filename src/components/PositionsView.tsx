@@ -13,7 +13,7 @@ import { SwitchNetwork } from "@/components/SwitchNetwork";
 import { WalletBar } from "@/components/WalletBar";
 import { USDG, assetByAddress, assetBySymbol } from "@/config/assets";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
-import { basketIndexFor, deploymentFor, symbolFor } from "@/lib/chain/deployments";
+import { deploymentFor, symbolFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
 import { useChainGuard } from "@/lib/chain/guard";
 import {
@@ -168,7 +168,7 @@ export function PositionsView({ theses }: { theses: ThesisMeta[] }) {
       const ab = a.detail?.breached ? 1 : 0;
       const bb = b.detail?.breached ? 1 : 0;
       if (ab !== bb) return bb - ab;
-      return (basketIndexFor(a.ticker) ?? 0) - (basketIndexFor(b.ticker) ?? 0);
+      return a.held.index - b.held.index;
     });
 
   const totalExit = rows.reduce((sum, r) => {
@@ -247,7 +247,10 @@ function PositionRow({
   const [open, setOpen] = useState(false);
 
   const ticker = detail?.symbol ?? "";
-  const serial = ticker ? basketIndexFor(ticker) ?? 0 : 0;
+  // Registry index plus one, from the live enumeration. Never from the ticker:
+  // two baskets can share one, and the duplicate would wear the original's
+  // serial.
+  const serial = held.index + 1;
   const breached = detail?.breached ?? false;
   const age = daysSince(meta?.filedOn);
   const months = horizonMonths(meta?.horizon);

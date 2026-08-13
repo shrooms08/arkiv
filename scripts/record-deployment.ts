@@ -60,6 +60,10 @@ const client = createPublicClient({ transport: http(rpcUrl) });
 const symbolAbi = [
   { type: "function", name: "symbol", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
 ] as const;
+const thesisUriAbi = [
+  { type: "function", name: "thesisURI", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+] as const;
+
 const nameAbi = [
   { type: "function", name: "name", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
 ] as const;
@@ -99,7 +103,17 @@ for (const tx of created) {
 
 // --- 2. Baskets, which exist only on chain -----------------------------------
 const arkiv = contracts.Arkiv as Address | undefined;
-const baskets: { symbol: string; name: string; address: string }[] = [];
+// `index` is the position in the registry's `baskets` array, which IS the
+// serial: ARKIV-000N is index N-1. It is recorded explicitly rather than
+// inferred from array position here, because two baskets can share a ticker and
+// deriving a serial from the ticker collides the moment one does.
+const baskets: {
+  index: number;
+  symbol: string;
+  name: string;
+  address: string;
+  thesisHash: string | null;
+}[] = [];
 if (arkiv) {
   const addresses = (await client.readContract({
     address: arkiv,
@@ -107,13 +121,21 @@ if (arkiv) {
     functionName: "getAllBaskets",
   })) as readonly Address[];
 
-  for (const address of addresses) {
-    const [symbol, name] = await Promise.all([
+  // getAllBaskets returns the registry array in order, so the position here is
+  // the registry index. Do not sort this.
+  for (const [index, address] of addresses.entries()) {
+    const [symbol, name, thesisURI] = await Promise.all([
       client.readContract({ address, abi: symbolAbi, functionName: "symbol" }) as Promise<string>,
       client.readContract({ address, abi: nameAbi, functionName: "name" }) as Promise<string>,
+      client.readContract({ address, abi: thesisUriAbi, functionName: "thesisURI" }) as Promise<string>,
     ]);
-    baskets.push({ symbol, name, address: getAddress(address) });
-    contracts[`Basket:${symbol}`] = getAddress(address);
+    const hash = thesisURI.startsWith("arkiv:") ? thesisURI.slice("arkiv:".length) : null;
+    baskets.push({ index, symbol, name, address: getAddress(address), thesisHash: hash });
+    // Tickers are user-supplied and not unique, so a second basket with the
+    // same ticker is keyed by its serial rather than silently overwriting the
+    // first one's entry.
+    const key = `Basket:${symbol}`;
+    contracts[key in contracts ? `${key}#${index + 1}` : key] = getAddress(address);
   }
 }
 

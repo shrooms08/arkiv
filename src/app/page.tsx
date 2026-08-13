@@ -7,7 +7,7 @@ import { MarketingHeader } from "@/components/MarketingHeader";
 import { NetworkBanner } from "@/components/NetworkBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { resolveCover } from "@/lib/ui/covers";
-import { basketIndexFor } from "@/lib/chain/deployments";
+import { serialForThesis } from "@/lib/chain/deployments";
 import { allRecords } from "@/lib/underwriting/lookup";
 
 export const dynamic = "force-dynamic";
@@ -119,7 +119,7 @@ export default function LandingPage() {
               </span>
               <span className="home-stat">
                 <span className="home-stat__value">
-                  {records.filter((r) => basketIndexFor(r.thesis.ticker)).length}
+                  {records.filter((r) => serialForThesis(r.thesisHash)).length}
                 </span>
                 <span className="app-label">minted on chain</span>
               </span>
@@ -138,7 +138,7 @@ export default function LandingPage() {
                 priority
                 fallback={{
                   ticker: featured.thesis.ticker,
-                  index: basketIndexFor(featured.thesis.ticker) ?? 0,
+                  index: serialForThesis(featured.thesisHash) ?? 0,
                   horizon: featured.thesis.falsifier.horizon,
                   segments: segmentsOf(featured.thesis.holdings, featured.thesis.primaryExpression),
                 }}
@@ -162,7 +162,7 @@ export default function LandingPage() {
             </div>
             <div className="landing-falsifier">
               <FalsifierBlock
-                index={basketIndexFor(featured.thesis.ticker) ?? 0}
+                index={serialForThesis(featured.thesisHash) ?? 0}
                 claim={featured.thesis.falsifier.claim}
                 observable={featured.thesis.falsifier.observable}
                 breachCondition={featured.thesis.falsifier.breachCondition}
@@ -209,7 +209,7 @@ export default function LandingPage() {
                 return (
                   <BasketCard
                     key={r.thesisHash}
-                    index={basketIndexFor(t.ticker) ?? 0}
+                    index={serialForThesis(r.thesisHash) ?? 0}
                     name={t.title}
                     ticker={t.ticker}
                     thesis={t.summary}
