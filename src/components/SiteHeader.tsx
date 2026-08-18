@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useChainId } from "wagmi";
 
 import { ArkivMark, Badge } from "@ds";
-import { ACTIVE_CHAIN, chainUsesMocks } from "@/lib/chain/chains";
+import { chainById, chainIsTestnet } from "@/lib/chain/chains";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { WalletBar } from "./WalletBar";
 
 const LINKS = [
@@ -26,7 +27,13 @@ const LINKS = [
 export function SiteHeader() {
   const pathname = usePathname();
   const chainId = useChainId();
-  const network = chainUsesMocks(ACTIVE_CHAIN.id) ? "X Layer testnet" : null;
+  // Names the chain actually being read, which is testnet by default and
+  // mainnet once a wallet connects there. A badge that always said testnet
+  // would be a lie on mainnet, and mainnet is the one where it matters.
+  const viewChainId = useViewChainId();
+  const network = chainIsTestnet(viewChainId)
+    ? "X Layer testnet"
+    : (chainById(viewChainId)?.name ?? null);
 
   return (
     <nav className="ark ark-nav" aria-label="Primary">

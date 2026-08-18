@@ -10,6 +10,7 @@ import { erc20Abi } from "@/lib/chain/abis";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { useChainGuard } from "@/lib/chain/guard";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { explainRevert } from "@/lib/chain/errors";
 
 const faucetAbi = [
@@ -32,7 +33,8 @@ export function Faucet() {
   const guard = useChainGuard();
   const { address, isConnected } = useAccount();
   const config = useConfig();
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const viewChainId = useViewChainId();
+  const deployment = deploymentFor(viewChainId);
   const { writeContractAsync } = useWriteContract();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function Faucet() {
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    chainId: ACTIVE_CHAIN.id,
+    chainId: viewChainId,
     query: { enabled: Boolean(address && deployment?.mockUsdg) },
   });
 

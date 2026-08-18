@@ -31,7 +31,18 @@ const manifest = JSON.parse(
   readFileSync(join("deployments", chainId === "196" ? "xlayer-mainnet.json" : "xlayer-testnet.json"), "utf8"),
 );
 const broadcast = JSON.parse(
-  readFileSync(join("contracts", "broadcast", "DeployTestnet.s.sol", chainId, "run-latest.json"), "utf8"),
+  // Mainnet deploys through Deploy.s.sol and testnet through DeployTestnet.s.sol,
+  // so the broadcast artifact lives under a different script directory.
+  readFileSync(
+    join(
+      "contracts",
+      "broadcast",
+      chainId === "196" ? "Deploy.s.sol" : "DeployTestnet.s.sol",
+      chainId,
+      "run-latest.json",
+    ),
+    "utf8",
+  ),
 ) as {
   transactions: {
     transactionType: string;
@@ -48,6 +59,10 @@ const SOURCE: Record<string, string> = {
   MockDexAdapter: "src/mocks/TestnetMocks.sol:MockDexAdapter",
   MockWrapper: "src/mocks/TestnetMocks.sol:MockWrapper",
   Basket: "src/Basket.sol:Basket",
+  // Mainnet only. These have no testnet counterpart because testnet uses the
+  // mock adapter instead of the real direct-pool one.
+  XLayerV3Adapter: "src/XLayerV3Adapter.sol:XLayerV3Adapter",
+  ArkivQuoter: "src/ArkivQuoter.sol:ArkivQuoter",
 };
 
 /** Compiled creation bytecode for a contract, from the Foundry artefact. */
@@ -65,6 +80,8 @@ const ARTEFACT_FILE: Record<string, string> = {
   MockSanctionsList: "TestnetMocks.sol",
   MockDexAdapter: "TestnetMocks.sol",
   MockWrapper: "TestnetMocks.sol",
+  XLayerV3Adapter: "XLayerV3Adapter.sol",
+  ArkivQuoter: "ArkivQuoter.sol",
 };
 
 const out: string[] = [];

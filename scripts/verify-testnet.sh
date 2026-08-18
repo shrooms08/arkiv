@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Verifies every deployed contract on X Layer testnet (chain 1952).
+# Verifies every deployed contract on X Layer. Defaults to testnet (1952);
+# run with CHAIN=196 for mainnet.
 #
 # Two verifiers, deliberately:
 #   - Sourcify needs no API key and supports chains 196 and 1952. It is the
@@ -13,8 +14,14 @@
 # hold the actual funds; an archive of unverified contracts reads as careless.
 set -uo pipefail
 
-CHAIN=1952
-RPC=${RPC:-https://testrpc.xlayer.tech}
+# Chain is overridable so mainnet reuses this exact path rather than getting a
+# second script that would drift from it. Defaults stay testnet.
+CHAIN=${CHAIN:-1952}
+if [ "$CHAIN" = "196" ]; then
+  RPC=${RPC:-https://rpc.xlayer.tech}
+else
+  RPC=${RPC:-https://testrpc.xlayer.tech}
+fi
 cd "$(dirname "$0")/.."
 
 TARGETS=$(mktemp)

@@ -1762,3 +1762,28 @@ input, textarea, select {
   }
 }
 .actionbar__detail--warn { color: var(--color-verdict); }
+
+/* Mainnet reads as a warning rather than as a demo label. Testnet keeps ink;
+   mainnet takes the verdict colour, which is the strongest signal available
+   and is not otherwise used in chrome. */
+.network-banner-mainnet {
+  background: var(--color-verdict);
+  color: var(--color-verdict-foreground);
+}
+.network-banner-mainnet .app-testnet-dot { background: var(--color-verdict-foreground); }
+
+.archive-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+  max-width: 44rem;
+  padding-block: var(--space-10);
+}
+.archive-empty__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-display);
+}

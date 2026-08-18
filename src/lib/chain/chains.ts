@@ -57,18 +57,44 @@ export const xLayerFork = defineChain({
 export const SUPPORTED_CHAINS = [xLayer, xLayerTestnet] as const;
 
 /**
- * The chain this build is deployed against.
+ * The default chain, and the demo.
  *
- * Everything that writes must happen here and nowhere else. `SUPPORTED_CHAINS`
- * is what wagmi is configured with, which is a broader set: X Layer mainnet is
- * configured so the app can render there, but nothing is deployed on it, so a
- * write sent from it would fail exactly as one sent from Ethereum would.
+ * Arkiv is deployed on both X Layer testnet and X Layer mainnet. Testnet is
+ * where the seven filed theses live and is what a visitor sees without a
+ * wallet, so it stays the default. Mainnet is real and empty.
+ *
+ * This used to be the ONLY deployed chain, and writes were pinned to it
+ * exactly. That is no longer true: see `isDeployedChain`.
  */
 export const ACTIVE_CHAIN = xLayerTestnet;
 
-/** True only on the chain the contracts actually live on. */
+/** Every chain Arkiv is actually deployed on. Writes are allowed on these. */
+export const DEPLOYED_CHAIN_IDS: readonly number[] = [xLayerTestnet.id, xLayer.id];
+
+/**
+ * True on a chain the contracts actually live on.
+ *
+ * Deliberately not "a chain wagmi is configured with": that set is broader and
+ * has included chains with nothing deployed on them, which is how a write once
+ * got built for a chain that could never have executed it.
+ */
+export function isDeployedChain(chainId: number | undefined): boolean {
+  return chainId !== undefined && DEPLOYED_CHAIN_IDS.includes(chainId);
+}
+
+/** Retained for call sites that mean the default chain specifically. */
 export function isActiveChain(chainId: number | undefined): boolean {
   return chainId === ACTIVE_CHAIN.id;
+}
+
+/** The chain object for an id, where Arkiv is deployed on it. */
+export function chainById(chainId: number | undefined) {
+  return SUPPORTED_CHAINS.find((c) => c.id === chainId);
+}
+
+/** True where the assets are mocks rather than real Backed xStocks. */
+export function chainIsTestnet(chainId: number | undefined): boolean {
+  return chainId === xLayerTestnet.id;
 }
 
 /**

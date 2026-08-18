@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 
-import { ACTIVE_CHAIN, isActiveChain } from "./chains";
+import { ACTIVE_CHAIN, isDeployedChain } from "./chains";
 
 export interface ChainGuard {
   /** The chain the WALLET is on. undefined when nothing is connected. */
@@ -30,9 +30,10 @@ export interface ChainGuard {
  * user nothing about what actually went wrong. `useAccount().chainId` is the
  * connector's real chain, including chains the app was never configured with.
  *
- * The bar is the deployment chain exactly, not "a supported chain". X Layer
- * mainnet is configured so pages can render there, but nothing is deployed on
- * it, so a write from it fails for the same reason a write from Ethereum does.
+ * The bar is "a chain Arkiv is deployed on", which is X Layer testnet and X
+ * Layer mainnet. It is NOT "a chain wagmi is configured with": that set has
+ * been broader, and a write built for a configured-but-undeployed chain fails
+ * at gas estimation with nothing useful to tell the user.
  */
 export function useChainGuard(): ChainGuard {
   const { chainId: connectedChainId, isConnected } = useAccount();
@@ -61,13 +62,15 @@ export function useChainGuard(): ChainGuard {
     );
   }, [switchChain]);
 
-  const ok = isConnected && isActiveChain(connectedChainId);
+  // Writes are allowed on any chain Arkiv is deployed on, which is now both
+  // X Layer testnet and X Layer mainnet. Anything else is still refused.
+  const ok = isConnected && isDeployedChain(connectedChainId);
 
   return {
     connectedChainId,
     isConnected,
     ok,
-    wrongChain: isConnected && !isActiveChain(connectedChainId),
+    wrongChain: isConnected && !isDeployedChain(connectedChainId),
     switching: isPending,
     error,
     switchToActive,

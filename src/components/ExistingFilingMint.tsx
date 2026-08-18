@@ -8,6 +8,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import { SerialNumber } from "@ds";
 import { InvestPanel } from "@/components/InvestPanel";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
 import { fetchBasketState, type BasketState } from "@/lib/chain/archive";
@@ -35,9 +36,10 @@ export function ExistingFilingMint({
   filing: RegistryEntry;
   serial: number;
 }) {
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
   const { address } = useAccount();
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const deployment = deploymentFor(viewChainId);
 
   const [state, setState] = useState<BasketState | null>(null);
   const [rates, setRates] = useState<Map<Address, bigint> | null>(null);

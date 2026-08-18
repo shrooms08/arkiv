@@ -14,6 +14,55 @@ Built for the OKX Build X Series AI Season, AI-RWA track, on X Layer.
 
 ## Live deployment
 
+Arkiv is deployed on both X Layer networks. Testnet is the demo and carries every filed
+thesis. Mainnet is real, verified, and empty.
+
+### X Layer mainnet, chain 196
+
+| Contract | Address |
+| --- | --- |
+| Arkiv registry | [`0x2CcfAb7975eAA9160F378A2f0a2a2B8F15b24946`](https://www.oklink.com/xlayer/address/0x2CcfAb7975eAA9160F378A2f0a2a2B8F15b24946) |
+| XLayerV3Adapter | [`0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0`](https://www.oklink.com/xlayer/address/0x219Bd7965C2218596C49F8be9eA99565d56Fc6D0) |
+| ArkivQuoter | [`0x8D23AB81e47E5477E14D6308E5c606626dCbBE75`](https://www.oklink.com/xlayer/address/0x8D23AB81e47E5477E14D6308E5c606626dCbBE75) |
+
+All 3 verified on Sourcify, creation and runtime both matching, confirmed through the
+Sourcify API at `https://repo.sourcify.dev/196/<address>`.
+
+No mock was deployed. The registry points at real USDG
+(`0x4ae46a509F6b1D9056937BA4500cb143933D2dc8`, 6 decimals), the real Chainalysis-style
+sanctions oracle (`0x615Dd3B9445A94334C1579F68115042D77CC7c44`), the real V3 fork factory
+(`0x4B2ab38DBF28D31D467aA8993f6c2585981D6804`) and the 14 real Backed xStock wrappers.
+Every one of those was re-read on chain 196 at deploy time rather than carried over from
+earlier recon. `feeBps` is 30 and `curatorBps` is 5000, asserted in the deploy script
+rather than trusted from the constructor.
+
+**No baskets are seeded on mainnet, and that is a funding limit rather than a technical
+one.** `minFirstMint` is 10 USDG per basket and the deployment budget was 3 US dollars of
+OKB, enough for gas and nothing else. The deploy cost 0.000149785 OKB, about 1.6 US cents.
+The registry is live and permissionless, so any funded address can file the first thesis
+against it today, with the same fee split and the same curator economics that run on
+testnet.
+
+### The rebasing guard, proven against real assets
+
+`setAssetAllowed` probes `multiplier()` and refuses any token that answers, because a
+rebasing balance breaks the basket's internal reserve ledger. On testnet that is a claim
+about mocks. On mainnet it can be shown against the real Backed tokens, with a static call
+that costs nothing:
+
+| Token | `multiplier()` | Drift from 1.0 | `setAssetAllowed` |
+| --- | --- | --- | --- |
+| `GLDx` base `0x2380F267...` | 1000000000000000000 | 0.0000% | reverts `RebasingToken` |
+| `SPYx` base `0x90A2a4c7...` | 1005714560286254000 | +0.5715% | reverts `RebasingToken` |
+| `NVDAx` base `0xc845b289...` | 1000918075849099600 | +0.0918% | reverts `RebasingToken` |
+| all 14 `w*x` wrappers | reverts, no such function | n/a | accepted |
+
+The drift is the point. Those base tokens have already rebased away from parity in
+production, so pasting one in where a wrapper belongs is not a hypothetical error, and the
+registry on chain 196 rejects it today.
+
+### X Layer testnet, chain 1952
+
 Registry `0xB2e78cf1194BdFd8bb0e2C8A0BBF0d6146f7659c`
 
 | Serial | Ticker | Basket |
@@ -29,7 +78,20 @@ All 25 contracts verified on Sourcify at `https://repo.sourcify.dev/1952/<addres
 
 Economics are live on chain, not documented aspiration. `quoteMintFee(1000e6)` returns a fee of 3 USDG against 997 net. Six seed mints have booked 9.00 USDG of fee, split 4.50 to the curator and 4.50 to the protocol.
 
-146 contract tests and 25 application tests pass.
+146 contract tests and 34 application tests pass.
+
+### A trap worth knowing about if you fork this
+
+A local anvil fork of X Layer mainnet keeps chain id 196, so `forge script --broadcast`
+against it writes to `broadcast/Deploy.s.sol/196/` with real-looking transaction hashes and
+31 receipts. That artifact is indistinguishable from a genuine mainnet deployment by
+inspection alone. This repository contained one for several days.
+
+What tells them apart is the chain, not the file. Check that the deployed addresses have
+code on the public RPC, and that a transaction hash from the artifact actually resolves
+there. The fork's receipts also sit one block past the fork point, which is thousands of
+blocks behind the real head. The fork artifact has been removed and only the real mainnet
+broadcast remains.
 
 ---
 

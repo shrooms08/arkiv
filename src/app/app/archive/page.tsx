@@ -6,6 +6,8 @@ import { useChainId, usePublicClient } from "wagmi";
 
 import { Badge, Button, SerialNumber } from "@ds";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
+import { chainIsTestnet } from "@/lib/chain/chains";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { deploymentFor } from "@/lib/chain/deployments";
 import {
   ARCHIVE_PAGE_SIZE,
@@ -26,9 +28,10 @@ function ageParts(createdAt: number): { value: string; unit: string } {
 }
 
 export default function ArchivePage() {
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
   const chainId = useChainId();
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const deployment = deploymentFor(viewChainId);
 
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -190,7 +193,39 @@ export default function ArchivePage() {
       </ol>
 
       {entries.length === 0 && !loading ? (
-        <p className="app-prose">Nothing archived yet.</p>
+        /* An empty registry is the expected state on mainnet, not a failure and
+           not a load that never finished. Saying which network is empty, and
+           why, is the difference between a considered empty state and a page
+           that looks broken. */
+        <section className="archive-empty">
+          <h2 className="archive-empty__title">
+            {chainIsTestnet(viewChainId)
+              ? "Nothing archived yet"
+              : "No theses filed on X Layer mainnet yet"}
+          </h2>
+          {chainIsTestnet(viewChainId) ? (
+            <p className="app-prose">The registry is live and holds no baskets.</p>
+          ) : (
+            <>
+              <p className="app-prose">
+                The mainnet registry is deployed, verified and permissionless, and it is
+                empty. Nothing has been filed against it because filing a basket requires
+                at least 10 USDG for the first mint, and this deployment was funded for
+                gas only.
+              </p>
+              <p className="app-prose">
+                That is a funding limit, not a technical one. Any funded address can file
+                the first thesis against it today, and the fee and curator economics are
+                live exactly as they are on testnet.
+              </p>
+              <p className="app-note">
+                The seven filed theses live on X Layer testnet. Switch your wallet to X
+                Layer testnet, or disconnect it, and this page reads those instead:
+                testnet is what the app shows by default.
+              </p>
+            </>
+          )}
+        </section>
       ) : null}
 
       <div className="app-meta-row">

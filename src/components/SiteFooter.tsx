@@ -5,6 +5,7 @@ import { useChainId, usePublicClient } from "wagmi";
 
 import { Footer } from "@ds";
 import { ACTIVE_CHAIN } from "@/lib/chain/chains";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { fetchBasketCount } from "@/lib/chain/archive";
 
@@ -33,9 +34,10 @@ const COLUMNS = [
  * line is the archive's real extent rather than a number typed into markup.
  */
 export function SiteFooter() {
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
   const chainId = useChainId();
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const deployment = deploymentFor(viewChainId);
   const [count, setCount] = useState<number | undefined>(undefined);
 
   useEffect(() => {

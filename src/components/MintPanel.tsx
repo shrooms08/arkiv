@@ -9,9 +9,9 @@ import { useConfig } from "wagmi";
 import { Button } from "@ds";
 import { USDG, assetBySymbol } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
-import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor, wrapperFor } from "@/lib/chain/deployments";
 import { useChainGuard } from "@/lib/chain/guard";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { fetchRegistry, findFiling, type RegistryEntry } from "@/lib/chain/registry";
 import { fetchMintQuotes, withSlippage, type LegQuote } from "@/lib/chain/quoter";
 import { Faucet } from "./Faucet";
@@ -40,11 +40,12 @@ export function MintPanel({
   const guard = useChainGuard();
   // undefined while the registry is being read, null when this thesis is new.
   const [existing, setExisting] = useState<RegistryEntry | null | undefined>(undefined);
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
   const config = useConfig();
   const { writeContractAsync } = useWriteContract();
 
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const deployment = deploymentFor(viewChainId);
 
   // The fee is read from the registry, never assumed. It is owner-settable
   // within a hard cap, so a hardcoded 30 bps here would eventually size the
@@ -53,7 +54,7 @@ export function MintPanel({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
-    chainId: ACTIVE_CHAIN.id,
+    chainId: viewChainId,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const feeBps = typeof feeBpsRaw === "bigint" ? feeBpsRaw : 0n;
@@ -175,7 +176,7 @@ export function MintPanel({
           `arkiv:${thesisHash}`,
         ],
       });
-      const receipt = await waitForTransactionReceipt(config, { hash: createHash, chainId: ACTIVE_CHAIN.id });
+      const receipt = await waitForTransactionReceipt(config, { hash: createHash, chainId: viewChainId });
 
       const created = await client.readContract({
         address: deployment!.arkiv,
@@ -202,7 +203,7 @@ export function MintPanel({
         functionName: "approve",
         args: [basket, usdgIn],
       });
-      await waitForTransactionReceipt(config, { hash: approveHash, chainId: ACTIVE_CHAIN.id });
+      await waitForTransactionReceipt(config, { hash: approveHash, chainId: viewChainId });
 
       // 3. Mint, with floors derived from the live quotes.
       setStep("minting");
@@ -222,7 +223,7 @@ export function MintPanel({
         functionName: "mint",
         args: [usdgIn, orderedSplit, minAmountsOut, minSharesOut, address],
       });
-      await waitForTransactionReceipt(config, { hash: mintHash, chainId: ACTIVE_CHAIN.id });
+      await waitForTransactionReceipt(config, { hash: mintHash, chainId: viewChainId });
 
       setStep("done");
     } catch (err) {

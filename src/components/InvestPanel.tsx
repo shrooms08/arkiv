@@ -8,10 +8,10 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { Button } from "@ds";
 import { USDG } from "@/config/assets";
 import { arkivAbi, basketAbi, erc20Abi } from "@/lib/chain/abis";
-import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
 import { useChainGuard } from "@/lib/chain/guard";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import { withSlippage } from "@/lib/chain/quoter";
 import { SwitchNetwork } from "./SwitchNetwork";
 import { Faucet } from "./Faucet";
@@ -62,11 +62,12 @@ export function InvestPanel({
 }: InvestPanelProps) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
   const config = useConfig();
   const guard = useChainGuard();
   const { writeContractAsync } = useWriteContract();
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const deployment = deploymentFor(viewChainId);
 
   const [amount, setAmount] = useState("100");
   const [slippageBps, setSlippageBps] = useState(100);
@@ -80,14 +81,14 @@ export function InvestPanel({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "feeBps",
-    chainId: ACTIVE_CHAIN.id,
+    chainId: viewChainId,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const { data: curatorBpsRaw } = useReadContract({
     address: deployment?.arkiv,
     abi: arkivAbi,
     functionName: "curatorBps",
-    chainId: ACTIVE_CHAIN.id,
+    chainId: viewChainId,
     query: { enabled: Boolean(deployment?.arkiv) },
   });
   const { data: balanceRaw, refetch: refetchBalance } = useReadContract({
@@ -95,7 +96,7 @@ export function InvestPanel({
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    chainId: ACTIVE_CHAIN.id,
+    chainId: viewChainId,
     query: { enabled: Boolean(address && deployment?.usdg) },
   });
 
@@ -186,7 +187,7 @@ export function InvestPanel({
         functionName: "approve",
         args: [basket, usdgIn],
       });
-      await waitForTransactionReceipt(config, { hash: approveHash, chainId: ACTIVE_CHAIN.id });
+      await waitForTransactionReceipt(config, { hash: approveHash, chainId: viewChainId });
 
       // 2. Mint. The split covers the POST-FEE amount and is sized to current
       // composition, which is the same shape the share maths assumes.
@@ -206,7 +207,7 @@ export function InvestPanel({
         functionName: "mint",
         args: [usdgIn, split, tokens.map(() => 0n), minSharesOut, address],
       });
-      await waitForTransactionReceipt(config, { hash: mintHash, chainId: ACTIVE_CHAIN.id });
+      await waitForTransactionReceipt(config, { hash: mintHash, chainId: viewChainId });
 
       setStep("done");
       onDone?.();

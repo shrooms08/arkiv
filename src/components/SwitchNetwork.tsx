@@ -27,7 +27,8 @@ export function SwitchNetwork({ guard, action, className = "" }: SwitchNetworkPr
     <div className={`chain-guard ${className}`.trim()} role="status">
       <p className="chain-guard__text">
         This wallet is on <strong>{chainLabel(guard.connectedChainId)}</strong>. Arkiv is
-        deployed on <strong>{ACTIVE_CHAIN.name} (chain {ACTIVE_CHAIN.id})</strong>
+        deployed on <strong>{ACTIVE_CHAIN.name} (chain {ACTIVE_CHAIN.id})</strong> and on{" "}
+        <strong>X Layer (chain 196)</strong>
         {action ? `, so ${action} is unavailable here.` : "."}
       </p>
 

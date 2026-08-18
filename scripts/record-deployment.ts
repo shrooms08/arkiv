@@ -155,6 +155,45 @@ manifest.deployBlock = broadcast.receipts.length
   : null;
 manifest.deployer = first?.transaction?.from ? getAddress(first.transaction.from) : null;
 manifest.contracts = contracts;
+// On mainnet the assets are not deployed by this script: USDG and the 14
+// wrappers already exist on chain 196. So rather than harvesting them from the
+// broadcast artifact, which would find nothing, read the deployed registry's
+// own allowlist. Only assets the registry actually accepted are recorded, and
+// each symbol is read from the token itself rather than assumed from a label.
+if (chainId === "196" && contracts.Arkiv) {
+  const assetInfoAbi = [
+    {
+      type: "function",
+      name: "assetInfo",
+      stateMutability: "view",
+      inputs: [{ type: "address" }],
+      outputs: [{ name: "allowed", type: "bool" }, { name: "isCore", type: "bool" }],
+    },
+  ] as const;
+
+  const configured = [...readFileSync(join("contracts", "src", "config", "XLayerConfig.sol"), "utf8")
+    .matchAll(/address internal constant W_\w+ = (0x[0-9a-fA-F]{40});/g)]
+    .map((m) => getAddress(m[1] as string));
+
+  for (const wrapper of configured) {
+    const [allowed] = (await client.readContract({
+      address: contracts.Arkiv as `0x${string}`,
+      abi: assetInfoAbi,
+      functionName: "assetInfo",
+      args: [wrapper],
+    })) as [boolean, boolean];
+    if (!allowed) continue;
+    const symbol = (await client.readContract({
+      address: wrapper,
+      abi: symbolAbi,
+      functionName: "symbol",
+    })) as string;
+    // The registry holds wrappers named wGLDx; the app's universe calls that
+    // asset GLDx. Strip the wrapper prefix so both sides agree on the symbol.
+    assets[symbol.replace(/^w/, "")] = wrapper;
+  }
+}
+
 manifest.assets = assets;
 manifest.baskets = baskets;
 manifest.transactions = { mint: sample("mint("), redeem: sample("redeem(") };

@@ -7,9 +7,9 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { Button } from "@ds";
 import { basketAbi } from "@/lib/chain/abis";
-import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { explainRevert } from "@/lib/chain/errors";
 import { useChainGuard } from "@/lib/chain/guard";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 
 export interface RedeemActionProps {
   basket: Address;
@@ -49,6 +49,7 @@ export function RedeemAction({
   const { address } = useAccount();
   const config = useConfig();
   const guard = useChainGuard();
+  const viewChainId = useViewChainId();
   const { writeContractAsync } = useWriteContract();
 
   const [pending, setPending] = useState(false);
@@ -65,7 +66,7 @@ export function RedeemAction({
         functionName: "redeem",
         args: [shares, address, Array.from({ length: legCount }, () => 0n)],
       });
-      await waitForTransactionReceipt(config, { hash, chainId: ACTIVE_CHAIN.id });
+      await waitForTransactionReceipt(config, { hash, chainId: viewChainId });
       onDone?.();
     } catch (err) {
       setError(explainRevert(err));

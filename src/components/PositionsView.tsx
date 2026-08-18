@@ -16,6 +16,7 @@ import { ACTIVE_CHAIN } from "@/lib/chain/chains";
 import { deploymentFor, symbolFor } from "@/lib/chain/deployments";
 import { explainRevert } from "@/lib/chain/errors";
 import { useChainGuard } from "@/lib/chain/guard";
+import { useViewChainId } from "@/lib/ui/useViewChain";
 import {
   fetchHeldBaskets,
   fetchPositionDetails,
@@ -51,8 +52,9 @@ export function PositionsView({ theses }: { theses: ThesisMeta[] }) {
   const guard = useChainGuard();
   // Reads are pinned to the deployment chain, never the wallet's, so a
   // wrong-chain visitor still sees the page rather than an empty one.
-  const client = usePublicClient({ chainId: ACTIVE_CHAIN.id });
-  const deployment = deploymentFor(ACTIVE_CHAIN.id);
+  const viewChainId = useViewChainId();
+  const client = usePublicClient({ chainId: viewChainId });
+  const deployment = deploymentFor(viewChainId);
 
   const [held, setHeld] = useState<HeldBasket[] | null>(null);
   const [details, setDetails] = useState<PositionDetail[] | null>(null);
