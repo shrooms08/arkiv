@@ -84,7 +84,10 @@ export function PositionsView({ theses }: { theses: ThesisMeta[] }) {
     } catch (e) {
       setError(explainRevert(e));
     }
-  }, [client, deployment, address]);
+    // viewChainId is in the deps because positions are per-chain: without it a
+    // wallet moving between X Layer testnet and mainnet keeps the previous
+    // chain's holdings on screen.
+  }, [client, deployment, address, viewChainId]);
 
   useEffect(() => {
     void load();

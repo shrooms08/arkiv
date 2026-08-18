@@ -74,10 +74,21 @@ export default function ArchivePage() {
     }
   }
 
+  // Keyed on the chain, and it clears first.
+  //
+  // Without the reset a chain change left the previous chain's rows on screen:
+  // the banner said mainnet while seven testnet theses were still listed under
+  // it. Rows are per-chain state, so switching chain has to discard them rather
+  // than wait for the next load to overwrite them, and the effect has to depend
+  // on the chain id itself rather than on objects derived from it.
   useEffect(() => {
+    setEntries([]);
+    setTotal(null);
+    setOffset(0);
+    setBreached({});
     void loadPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, deployment?.arkiv]);
+  }, [viewChainId, deployment?.arkiv]);
 
   if (!deployment) {
     return (
