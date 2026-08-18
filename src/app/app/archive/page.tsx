@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChainId, usePublicClient } from "wagmi";
 
 import { Badge, Button, SerialNumber } from "@ds";
@@ -41,15 +41,30 @@ export default function ArchivePage() {
   const [breached, setBreached] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState<"all" | "standing" | "breached">("all");
 
-  async function loadPage(from: number) {
+  /**
+   * Which load is current.
+   *
+   * Chain changes start a new load before the previous one has resolved, and
+   * the two race. The mainnet registry is empty so it answers almost instantly,
+   * while testnet has seven baskets and several multicalls behind it, so the
+   * STALE response routinely landed last and overwrote the fresh one. That is
+   * how seven testnet theses ended up listed under a mainnet banner. Every
+   * write below is gated on still being the current load.
+   */
+  const runId = useRef(0);
+
+  async function loadPage(from: number, run = runId.current) {
     if (!client || !deployment) return;
+    const current = () => run === runId.current;
     setLoading(true);
     setError(null);
     try {
       const count = await fetchBasketCount(client, deployment.arkiv);
+      if (!current()) return;
       setTotal(count);
       const addresses = await fetchBasketPage(client, deployment.arkiv, from, ARCHIVE_PAGE_SIZE);
       const details = await fetchBasketDetails(client, addresses);
+      if (!current()) return;
       setEntries((prev) => (from === 0 ? details : [...prev, ...details]));
       setOffset(from + addresses.length);
 
@@ -57,6 +72,7 @@ export default function ArchivePage() {
       // archive itself from rendering.
       try {
         const flags = await fetchBreachFlags(client, deployment.arkiv, addresses);
+        if (!current()) return;
         setBreached((prev) => {
           const next = { ...prev };
           addresses.forEach((a, i) => {
@@ -68,9 +84,9 @@ export default function ArchivePage() {
         /* leave flags absent; rows render as standing */
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (current()) setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   }
 
@@ -82,11 +98,12 @@ export default function ArchivePage() {
   // than wait for the next load to overwrite them, and the effect has to depend
   // on the chain id itself rather than on objects derived from it.
   useEffect(() => {
+    const run = ++runId.current;
     setEntries([]);
     setTotal(null);
     setOffset(0);
     setBreached({});
-    void loadPage(0);
+    void loadPage(0, run);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewChainId, deployment?.arkiv]);
 

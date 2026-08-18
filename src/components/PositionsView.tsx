@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatUnits, type Address } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
@@ -60,9 +60,14 @@ export function PositionsView({ theses }: { theses: ThesisMeta[] }) {
   const [details, setDetails] = useState<PositionDetail[] | null>(null);
   const [prices, setPrices] = useState<Map<Address, LegExitValue> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Same race as the archive: a chain change starts a second load while the
+      first is in flight, and whichever resolves last wins unless gated. */
+  const runId = useRef(0);
 
   const load = useCallback(async () => {
     if (!client || !deployment || !address) return;
+    const run = ++runId.current;
+    const current = () => run === runId.current;
     setError(null);
     setHeld(null);
     setDetails(null);
@@ -71,18 +76,22 @@ export function PositionsView({ theses }: { theses: ThesisMeta[] }) {
       // Stage one. Balances land first and rows paint immediately from the
       // manifest and the fixtures, so nothing waits on the slowest read.
       const h = await fetchHeldBaskets(client, deployment, address);
+      if (!current()) return;
       setHeld(h);
       if (h.length === 0) return;
 
       // Stage two. Detail reads touch only the baskets actually held.
       const d = await fetchPositionDetails(client, deployment, h);
+      if (!current()) return;
       setDetails(d);
 
       // Stage three. Exit values are the slowest, and the least important.
       const legs = Array.from(new Set(d.flatMap((p) => p.tokens)));
-      setPrices(await fetchExitValuesFor(client, deployment, legs));
+      const p = await fetchExitValuesFor(client, deployment, legs);
+      if (!current()) return;
+      setPrices(p);
     } catch (e) {
-      setError(explainRevert(e));
+      if (current()) setError(explainRevert(e));
     }
     // viewChainId is in the deps because positions are per-chain: without it a
     // wallet moving between X Layer testnet and mainnet keeps the previous
